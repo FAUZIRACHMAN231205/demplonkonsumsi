@@ -1,12 +1,8 @@
-// src/pages/_app.tsx
-import "@/styles/globals.css";
-import { Toaster } from "@/components/ui/toaster";
+import '../styles/globals.css' // Pastikan Anda punya file CSS global
+import type { AppProps } from 'next/app'
 
-export default function App({ Component, pageProps }) {
-  return (
-    <>
-      <Component {...pageProps} />
-      <Toaster />
-    </>
-  );
+function MyApp({ Component, pageProps }: AppProps) {
+  return <Component {...pageProps} />
 }
+
+export default MyApp
