@@ -17,7 +17,8 @@ export default function PemesananPage() {
     selectedOrder,
     isDialogOpen,
     toast,
-    isLoading
+    isLoading,
+    searchDate, // <-- LANGKAH 1: Ambil state baru dari hook
   } = usePemesanan();
 
   const handleStartNewOrder = () => setCurrentView('form');
@@ -38,6 +39,7 @@ export default function PemesananPage() {
             counts={counts}
             actions={actions}
             onNewOrderClick={handleStartNewOrder}
+            searchDate={searchDate} // <-- LANGKAH 2: Teruskan state ini ke dashboard
           />
         ) : (
           <PemesananForm 
@@ -55,7 +57,7 @@ export default function PemesananPage() {
                 <div className="p-6 pt-0 space-y-3">
                     {selectedOrder && Object.entries(selectedOrder).filter(([key]) => !['id', 'createdAt'].includes(key)).map(([key, val]) => (
                         <div key={key} className="flex justify-between text-sm">
-                          <strong className="capitalize font-semibold text-slate-500">{key}:</strong> 
+                          <strong className="capitalize font-semibold text-slate-500">{key.replace(/([A-Z])/g, ' $1')}:</strong> 
                           <span className="text-slate-900 text-right">{String(val) || "-"}</span>
                         </div>
                     ))}
@@ -65,7 +67,12 @@ export default function PemesananPage() {
         
         <AnimatePresence>
             {toast.show && (
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="fixed bottom-5 right-5 bg-slate-900 text-white p-4 rounded-lg shadow-lg z-50 w-80">
+                <motion.div 
+                  initial={{ opacity: 0, y: 50 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0, y: 20 }} 
+                  className="fixed bottom-5 right-5 bg-slate-900 text-white p-4 rounded-lg shadow-lg z-50 w-80"
+                >
                     <p className="font-bold">{toast.title}</p>
                     <p className="text-sm text-slate-300">{toast.description}</p>
                 </motion.div>
@@ -75,4 +82,3 @@ export default function PemesananPage() {
     </div>
   );
 }
-

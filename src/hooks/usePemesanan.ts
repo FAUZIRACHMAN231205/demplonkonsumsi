@@ -7,6 +7,7 @@ export function usePemesanan() {
   const [selectedOrder, setSelectedOrder] = useState<Pemesanan | null>(null);
   const [filterStatus, setFilterStatus] = useState("Semua");
   const [sortOrder, setSortOrder] = useState("Terbaru");
+  const [searchDate, setSearchDate] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [toast, setToast] = useState<{ title: string; description: string; show: boolean }>({ title: '', description: '', show: false });
   const [isLoading, setIsLoading] = useState(true);
@@ -15,16 +16,16 @@ export function usePemesanan() {
   useEffect(() => {
     setIsLoading(true);
     setTimeout(() => { // Simulate loading
-        try {
-            const savedRiwayat = localStorage.getItem('riwayatPemesanan');
-            if (savedRiwayat) {
-                setRiwayat(JSON.parse(savedRiwayat));
-            }
-        } catch (error) {
-            console.error("Gagal memuat data dari localStorage:", error);
-            showToast("Error", "Gagal memuat data tersimpan.");
+      try {
+        const savedRiwayat = localStorage.getItem('riwayatPemesanan');
+        if (savedRiwayat) {
+          setRiwayat(JSON.parse(savedRiwayat));
         }
-        setIsLoading(false);
+      } catch (error) {
+        console.error("Gagal memuat data dari localStorage:", error);
+        showToast("Error", "Gagal memuat data tersimpan.");
+      }
+      setIsLoading(false);
     }, 500);
   }, []);
 
@@ -57,11 +58,15 @@ export function usePemesanan() {
         if (r.status in calculatedCounts) calculatedCounts[r.status]++;
     });
 
-    const filtered = riwayat.filter(r => filterStatus === "Semua" || r.status === filterStatus);
+    const filtered = riwayat.filter(r => {
+        const statusMatch = filterStatus === "Semua" || r.status === filterStatus;
+        const dateMatch = !searchDate || r.tanggal === searchDate; 
+        return statusMatch && dateMatch;
+    });
     
     const sorted = filtered.sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
+        const dateA = new Date(a.tanggal).getTime();
+        const dateB = new Date(b.tanggal).getTime();
         return sortOrder === 'Terbaru' ? dateB - dateA : dateA - dateB;
     });
 
@@ -69,7 +74,7 @@ export function usePemesanan() {
         counts: calculatedCounts,
         filteredAndSortedRiwayat: sorted,
     };
-  }, [riwayat, filterStatus, sortOrder]);
+  }, [riwayat, filterStatus, sortOrder, searchDate]);
 
   // --- ACTIONS ---
   const addOrder = (values: z.infer<typeof formSchema>) => {
@@ -93,15 +98,21 @@ export function usePemesanan() {
     showToast("Status Diperbarui", `Pesanan "${acara}" kini ${status}.`);
   };
 
+  const deleteOrder = (id: string, acara: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus pesanan "${acara}"?`)) {
+      setRiwayat(prev => prev.filter(item => item.id !== id));
+      showToast("Pesanan Dihapus", `Pesanan "${acara}" telah berhasil dihapus.`);
+    }
+  };
+
   const exportCSV = () => {
-    const headers = ["Acara", "Tanggal", "Lokasi", "Jumlah", "Status", "Catatan"];
+    const headers = ["Acara", "Tanggal", "Lokasi", "Status", "Catatan"];
     const rows = filteredAndSortedRiwayat.map(o => [
-        `"${o.acara.replace(/"/g, '""')}"`,
-        o.tanggal,
-        `"${o.lokasi.replace(/"/g, '""')}"`,
-        o.jumlah,
-        o.status,
-        `"${(o.catatan ?? "").replace(/"/g, '""')}"`
+      `"${o.acara.replace(/"/g, '""')}"`,
+      o.tanggal,
+      `"${o.lokasi.replace(/"/g, '""')}"`,
+      o.status,
+      `"${(o.catatan ?? "").replace(/"/g, '""')}"`
     ].join(","));
     
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
@@ -124,13 +135,16 @@ export function usePemesanan() {
     isDialogOpen,
     toast,
     isLoading,
+    searchDate,
     actions: {
       addOrder,
       updateStatus,
+      deleteOrder,
       exportCSV,
       viewOrderDetails,
       setFilterStatus,
       setSortOrder,
+      setSearchDate,
       setIsDialogOpen,
     },
   };
