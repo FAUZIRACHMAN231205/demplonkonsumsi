@@ -1,7 +1,7 @@
 import React, { useState, useMemo, forwardRef, useEffect, useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import * as z from "zod";
 
 // --- UTILITY: Class Name Merger ---
@@ -85,8 +85,11 @@ const CardFooter = forwardRef(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
 ));
 
-const Input = forwardRef(({ className, ...props }, ref) => (
-  <input className={cn("flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-70", className)} ref={ref} {...props} />
+const Input = forwardRef(({ className, icon, ...props }, ref) => (
+    <div className="relative">
+        {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>}
+        <input className={cn("flex h-10 w-full rounded-md border border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-70", icon ? "pl-10 pr-3" : "px-3", className)} ref={ref} {...props} />
+    </div>
 ));
 
 const Label = forwardRef(({ className, ...props }, ref) => (
@@ -94,15 +97,43 @@ const Label = forwardRef(({ className, ...props }, ref) => (
 ));
 
 // --- HELPER ICONS FOR COMPONENTS ---
-const CheckCircle2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" ><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>;
+const CheckCircle2 = ({className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>;
 const ChevronDown = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 9 6 6 6-6"/></svg>;
 const SearchIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
 const Trash2 = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
 const Plus = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>;
+const InfoIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>;
+const AlertTriangleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={className}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>;
+const CalendarDays = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
+const Users = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+const File = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
 
+// --- Info Card Component ---
+const InfoCard = ({ icon, title, children, variant = 'info' }) => {
+    const variants = {
+        info: 'bg-blue-50 border-blue-200 text-blue-800',
+        warning: 'bg-amber-50 border-amber-200 text-amber-800',
+    };
+    const iconVariants = {
+        info: 'text-blue-500',
+        warning: 'text-amber-500',
+    }
+
+    return (
+        <div className={cn('rounded-lg p-4 flex gap-4 border-l-4', variants[variant])}>
+            <div className={cn("flex-shrink-0 mt-1", iconVariants[variant])}>
+                {icon}
+            </div>
+            <div>
+                <h4 className="font-bold">{title}</h4>
+                <div className="text-sm opacity-90">{children}</div>
+            </div>
+        </div>
+    );
+};
 
 // --- SEARCHABLE SELECT COMPONENT ---
-const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi..." }) => {
+const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi...", icon }) => {
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
@@ -140,11 +171,13 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
 
     return (
         <div className="relative w-full" ref={containerRef}>
+             {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>}
             <button
                 type="button"
                 className={cn(
-                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                    !selectedLabel && "text-slate-500"
+                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    !selectedLabel && "text-slate-500",
+                     icon ? "pl-10 pr-3" : "px-3"
                 )}
                 onClick={() => setIsOpen(!isOpen)}
             >
@@ -366,6 +399,27 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
             `}</style>
+            
+            {step === 1 && (
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                    <InfoCard
+                        variant="info"
+                        icon={<InfoIcon className="h-6 w-6" />}
+                        title="Informasi Order"
+                    >
+                        <p>Order dilakukan minimal H-1 kegiatan</p>
+                        <p>Order dapat dilakukan pada pukul 07:00 - 14:00</p>
+                    </InfoCard>
+                    <InfoCard
+                        variant="warning"
+                        icon={<AlertTriangleIcon className="h-6 w-6" />}
+                        title="Informasi Transaksi"
+                    >
+                        <p>Informasi untuk pemesanan order wajib di approve oleh approval</p>
+                    </InfoCard>
+                </div>
+            )}
+
 
             {/* Stepper UI */}
             <div className="flex justify-center items-start gap-4 mb-8">
