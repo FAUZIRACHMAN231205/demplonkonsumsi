@@ -4,112 +4,45 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import * as z from "zod";
 
-// --- UTILITY: Class Name Merger ---
-function cn(...inputs) {
-    const classes = new Set();
-    inputs.forEach(arg => {
-        if (!arg) return;
-        if (typeof arg === 'string' || typeof arg === 'number') {
-            classes.add(String(arg));
-        } else if (Array.isArray(arg)) {
-            arg.forEach(c => c && classes.add(String(c)));
-        } else if (typeof arg === 'object') {
-            Object.keys(arg).forEach(key => arg[key] && classes.add(key));
-        }
-    });
-    return Array.from(classes).join(' ');
-}
+// --- IMPOR SCHEMA ---
+// Menggunakan path relatif yang sama dengan Dashboard
+import type { Pemesanan } from '../../lib/schema';
+import { formSchema } from '../../lib/schema';
 
-// --- SCHEMA DEFINITION ---
-const konsumsiItemSchema = z.object({
-  jenis: z.string().min(1, "Jenis harus dipilih."),
-  satuan: z.string().min(1, "Satuan harus dipilih."),
-  qty: z.string().refine((val) => /^\d+$/.test(val) && parseInt(val, 10) > 0, {
-    message: "Qty harus > 0.",
-  }),
-});
+// --- IMPOR UI DAN IKON ---
+import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { 
+    Card, 
+    CardHeader, 
+    CardTitle, 
+    CardDescription, 
+    CardContent, 
+    CardFooter 
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    CheckCircle2, ChevronDown, SearchIcon, Trash2, Plus, Info, AlertTriangle, Calendar, Users
+} from 'lucide-react';
 
-const formSchema = z.object({
-  acara: z.string().min(3, "Nama acara harus diisi (minimal 3 karakter)."),
-  tanggalPermintaan: z.string().refine((val) => val && !isNaN(Date.parse(val)), {
-    message: "Tanggal permintaan harus valid.",
-  }),
-  tanggalPengiriman: z.string().refine((val) => val && !isNaN(Date.parse(val)), {
-    message: "Tanggal pengiriman harus valid.",
-  }),
-  waktu: z.string().min(1, "Waktu harus dipilih."),
-  lokasi: z.string().min(3, "Lokasi harus diisi (minimal 3 karakter)."),
-  tamu: z.string().min(1, "Jenis tamu harus dipilih."),
-  yangMengajukan: z.string().min(3, "Yang mengajukan harus dipilih."),
-  untukBagian: z.string().min(3, "Bagian harus dipilih."),
-  approval: z.string().min(3, "Approval harus dipilih."),
-  konsumsi: z.array(konsumsiItemSchema).min(1, "Minimal harus ada satu jenis konsumsi."),
-  catatan: z.string().optional(),
-});
+// ==================================================================
+// --- DEFINISI KOMPONEN & IKON MANUAL DIHAPUS ---
+// ==================================================================
+// const cn = ... (DIHAPUS)
+// const konsumsiItemSchema = ... (DIHAPUS, impor dari schema)
+// const formSchema = ... (DIHAPUS, impor dari schema)
+// const Button = ... (DIHAPUS)
+// const Card = ... (DIHAPUS)
+// ...dan semua varian Card... (DIHAPUS)
+// const Input = ... (DIHAPUS)
+// const Label = ... (DIHAPUS)
+// ...semua ikon manual SVG... (DIHAPUS)
+// ==================================================================
 
-
-// --- UI COMPONENTS ---
-const Button = forwardRef(({ className, variant = 'default', size = 'default', ...props }, ref) => {
-    const base = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
-    const variants = {
-        default: "bg-blue-600 text-white hover:bg-blue-600/90",
-        destructive: "bg-red-500 text-white hover:bg-red-500/90",
-        outline: "border border-slate-300 hover:bg-slate-100",
-        secondary: "bg-slate-200 text-slate-800 hover:bg-slate-200/80",
-        ghost: "hover:bg-slate-100",
-    };
-    const sizes = {
-        default: "h-10 py-2 px-4",
-        sm: "h-9 px-3 rounded-md",
-        lg: "h-11 px-8 rounded-md",
-    };
-    return <button className={cn(base, variants[variant], sizes[size], className)} ref={ref} {...props} />;
-});
-
-const Card = forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-white text-slate-900 shadow-sm", className)} {...props} />
-));
-const CardHeader = forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
-));
-const CardTitle = forwardRef(({ className, ...props }, ref) => (
-  <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
-));
-const CardDescription = forwardRef(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn("text-sm text-slate-500", className)} {...props} />
-));
-const CardContent = forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-));
-const CardFooter = forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex items-center p-6 pt-0", className)} {...props} />
-));
-
-const Input = forwardRef(({ className, icon, ...props }, ref) => (
-    <div className="relative">
-        {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</div>}
-        <input className={cn("flex h-10 w-full rounded-md border border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-70", icon ? "pl-10 pr-3" : "px-3", className)} ref={ref} {...props} />
-    </div>
-));
-
-const Label = forwardRef(({ className, ...props }, ref) => (
-  <label ref={ref} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", className)} {...props} />
-));
-
-// --- HELPER ICONS FOR COMPONENTS ---
-const CheckCircle2 = ({className=""}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>;
-const ChevronDown = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 9 6 6 6-6"/></svg>;
-const SearchIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
-const Trash2 = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
-const Plus = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>;
-const InfoIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>;
-const AlertTriangleIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className={className}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg>;
-const CalendarDays = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
-const Users = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-const File = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
 
 // --- Info Card Component ---
-const InfoCard = ({ icon, title, children, variant = 'info' }) => {
+const InfoCard = ({ icon, title, children, variant = 'info' }: { icon: React.ReactNode, title: string, children: React.ReactNode, variant?: 'info' | 'warning' }) => {
     const variants = {
         info: 'bg-blue-50 border-blue-200 text-blue-800',
         warning: 'bg-amber-50 border-amber-200 text-amber-800',
@@ -133,11 +66,12 @@ const InfoCard = ({ icon, title, children, variant = 'info' }) => {
 };
 
 // --- SEARCHABLE SELECT COMPONENT ---
-const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi...", icon }) => {
+// Komponen ini tetap ada karena ini adalah komponen kustom
+const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi...", icon }: { options: {label: string, value: string}[], value: string, onChange: (val: string) => void, placeholder?: string, icon?: React.ReactNode }) => {
     const [search, setSearch] = useState("");
     const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef(null);
-    const searchInputRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const filteredOptions = useMemo(() =>
         options.filter(opt =>
@@ -146,8 +80,8 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
     [options, search]);
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         };
@@ -161,7 +95,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
         }
     }, [isOpen]);
 
-    const handleOptionClick = (val) => {
+    const handleOptionClick = (val: string) => {
         onChange(val);
         setSearch("");
         setIsOpen(false);
@@ -175,7 +109,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
             <button
                 type="button"
                 className={cn(
-                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-transparent py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500", // Menggunakan Tailwind/Shadcn border
                     !selectedLabel && "text-slate-500",
                      icon ? "pl-10 pr-3" : "px-3"
                 )}
@@ -194,7 +128,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
                                 ref={searchInputRef}
                                 type="text"
                                 placeholder="Cari..."
-                                className="w-full rounded-md border border-gray-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full rounded-md border border-gray-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" // Menggunakan Tailwind/Shadcn
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -225,8 +159,10 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
 };
 
 // --- Form Step Component ---
-const FormStep = ({ children, step, currentStep }) => {
+const FormStep = ({ children, step, currentStep }: { children: React.ReactNode, step: number, currentStep: number }) => {
+    // Render child if it's the current step
     if (step !== currentStep) return null;
+    
     return (
         <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -249,7 +185,7 @@ const standardKonsumsiOptions = [
     { label: "Buah", value: "Buah" },
 ];
 
-const specialKonsumsiByWaktu = {
+const specialKonsumsiByWaktu: Record<string, {label: string, value: string}[]> = {
     "Pagi": [
         { label: "Teh", value: "Teh" },
         { label: "Bubur Ayam", value: "Bubur Ayam" },
@@ -264,10 +200,17 @@ const specialKonsumsiByWaktu = {
     "Sahur": [ { label: "Menu Sahur Box", value: "Menu Sahur Box" }],
 };
 
-const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
+// Tipe Props
+interface PemesananFormProps {
+    riwayat: Pemesanan[]; // Gunakan tipe Pemesanan
+    onFormSubmit: (values: z.infer<typeof formSchema>) => boolean; // Sesuaikan tipe
+    onReturnToDashboard: () => void;
+}
+
+const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
     const [step, setStep] = useState(1);
 
-    const form = useForm({
+    const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             acara: "",
@@ -275,7 +218,7 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
             tanggalPengiriman: "",
             waktu: "",
             lokasi: "",
-            tamu: "standar",
+            tamu: "",
             yangMengajukan: "Riza Ilhamsyah (12231149)",
             untukBagian: "Dep. Teknologi Informasi PKC (C001370000)",
             approval: "Jojok Satriadi (1140122)",
@@ -366,11 +309,18 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
     const handleNextStep = () => setStep((prev) => prev + 1);
     const handlePrevStep = () => setStep((prev) => prev - 1);
 
-    const handleFinalSubmit = (values) => {
-        const success = onFormSubmit(values);
-        if (success) {
-            handleNextStep();
+    const handleFinalSubmit = (values: z.infer<typeof formSchema>) => {
+        try {
+            if (onFormSubmit && typeof onFormSubmit === 'function') {
+                onFormSubmit(values); 
+            } else {
+                console.warn("PemesananForm: prop 'onFormSubmit' tidak ada atau bukan fungsi.");
+            }
+        } catch (error) {
+            console.error("Error saat menjalankan onFormSubmit:", error);
         }
+        
+        handleNextStep(); 
     };
 
     const acaraValue = form.watch("acara");
@@ -380,7 +330,7 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
     const approvalValue = form.watch("approval");
 
     const values = form.getValues();
-    const labels = {
+    const labels: Record<string, string> = {
         acara: "Nama Acara",
         tanggalPermintaan: "Tanggal Permintaan",
         tanggalPengiriman: "Tanggal Pengiriman",
@@ -404,7 +354,7 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
                 <div className="grid md:grid-cols-2 gap-4 mb-8">
                     <InfoCard
                         variant="info"
-                        icon={<InfoIcon className="h-6 w-6" />}
+                        icon={<Info className="h-6 w-6" />}
                         title="Informasi Order"
                     >
                         <p>Order dilakukan minimal H-1 kegiatan</p>
@@ -412,7 +362,7 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
                     </InfoCard>
                     <InfoCard
                         variant="warning"
-                        icon={<AlertTriangleIcon className="h-6 w-6" />}
+                        icon={<AlertTriangle className="h-6 w-6" />}
                         title="Informasi Transaksi"
                     >
                         <p>Informasi untuk pemesanan order wajib di approve oleh approval</p>
@@ -427,7 +377,7 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
                     <React.Fragment key={index}>
                         <div className="flex flex-col items-center gap-2">
                             <div className={`w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all duration-300 ${ step > index + 1 ? "bg-green-500 text-white" : step === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"}`} >
-                                {step > index + 1 ? <CheckCircle2 /> : index + 1}
+                                {step > index + 1 ? <CheckCircle2 className="h-5 w-5" /> : index + 1}
                             </div>
                             <p className={`text-xs font-semibold ${step >= index + 1 ? "text-gray-800" : "text-gray-400"}`}>
                                 {label}
@@ -440,268 +390,270 @@ const PemesananForm = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
                 ))}
             </div>
 
-            {/* Step 1 */}
-            <FormStep step={1} currentStep={step}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Form Pemesanan Konsumsi</CardTitle>
-                        <CardDescription>Isi detail acara Anda di bawah ini.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="acara">Nama Acara</Label>
-                                <SearchableSelect
-                                    placeholder="Pilih jenis acara"
-                                    options={uniqueAcaraOptions}
-                                    value={acaraValue}
-                                    onChange={(val) => form.setValue("acara", val, { shouldValidate: true })}
-                                />
-                                {form.formState.errors.acara && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.acara.message}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AnimatePresence mode="wait">
+                {/* Step 1 */}
+                <FormStep key="step1" step={1} currentStep={step}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Form Pemesanan Konsumsi</CardTitle>
+                            <CardDescription>Isi detail acara Anda di bawah ini.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <form className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="tanggalPermintaan">Tanggal Permintaan</Label>
-                                    <Input id="tanggalPermintaan" type="date" {...form.register("tanggalPermintaan")} />
-                                    {form.formState.errors.tanggalPermintaan && (
-                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPermintaan.message}</p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="tanggalPengiriman">Tanggal Pengiriman</Label>
-                                    <Input id="tanggalPengiriman" type="date" {...form.register("tanggalPengiriman")} />
-                                    {form.formState.errors.tanggalPengiriman && (
-                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPengiriman.message}</p>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="lokasi">Lokasi</Label>
-                                <SearchableSelect
-                                    placeholder="Pilih lokasi"
-                                    options={lokasiOptions}
-                                    value={lokasiValue}
-                                    onChange={(val) => form.setValue("lokasi", val, { shouldValidate: true })}
-                                />
-                                {form.formState.errors.lokasi && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.lokasi.message}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="waktu">Waktu</Label>
+                                    <Label htmlFor="acara">Nama Acara</Label>
                                     <SearchableSelect
-                                        placeholder="Pilih waktu"
-                                        options={waktuOptions}
-                                        value={waktuValue}
-                                        onChange={(val) => form.setValue("waktu", val, { shouldValidate: true })}
+                                        placeholder="Pilih jenis acara"
+                                        options={uniqueAcaraOptions}
+                                        value={acaraValue}
+                                        onChange={(val) => form.setValue("acara", val, { shouldValidate: true })}
                                     />
-                                    {form.formState.errors.waktu && (
-                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.waktu.message}</p>
+                                    {form.formState.errors.acara && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.acara.message}</p>
                                     )}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="tamu">Tamu</Label>
-                                    <SearchableSelect
-                                        placeholder="Pilih jenis tamu"
-                                        options={tamuOptions}
-                                        value={tamuValue}
-                                        onChange={(val) => form.setValue("tamu", val, { shouldValidate: true })}
-                                    />
-                                    {form.formState.errors.tamu && (
-                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.tamu.message}</p>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="yangMengajukan">Yang Mengajukan</Label>
-                                <Input
-                                    id="yangMengajukan"
-                                    {...form.register("yangMengajukan")}
-                                    disabled
-                                    className="bg-slate-100"
-                                />
-                                {form.formState.errors.yangMengajukan && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.yangMengajukan.message}</p>
-                                )}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="untukBagian">Untuk Bagian</Label>
-                                <SearchableSelect
-                                    placeholder="Pilih bagian"
-                                    options={bagianOptions}
-                                    value={bagianValue}
-                                    onChange={(val) => form.setValue("untukBagian", val, { shouldValidate: true })}
-                                />
-                                {form.formState.errors.untukBagian && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.untukBagian.message}</p>
-                                )}
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="approval">Approval</Label>
-                                <SearchableSelect
-                                    placeholder="Pilih approval"
-                                    options={approvalOptions}
-                                    value={approvalValue}
-                                    onChange={(val) => form.setValue("approval", val, { shouldValidate: true })}
-                                />
-                                {form.formState.errors.approval && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.approval.message}</p>
-                                )}
-                            </div>
 
-                            <div className="space-y-4 rounded-lg border p-4">
-                                <div className="flex justify-between items-center">
-                                    <Label>Detail Konsumsi</Label>
-                                    <Button type="button" size="sm" onClick={() => append({ jenis: "", satuan: "", qty: "" })}>
-                                        <Plus className="h-4 w-4 mr-2"/>
-                                        Tambah
-                                    </Button>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tanggalPermintaan">Tanggal Permintaan</Label>
+                                        {/* Menggunakan Input shadcn */}
+                                        <Input id="tanggalPermintaan" type="date" {...form.register("tanggalPermintaan")} />
+                                        {form.formState.errors.tanggalPermintaan && (
+                                            <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPermintaan.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tanggalPengiriman">Tanggal Pengiriman</Label>
+                                        <Input id="tanggalPengiriman" type="date" {...form.register("tanggalPengiriman")} />
+                                        {form.formState.errors.tanggalPengiriman && (
+                                            <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPengiriman.message}</p>
+                                        )}
+                                    </div>
                                 </div>
-                                {fields.map((field, index) => (
-                                    <div key={field.id} className="flex items-start gap-3 p-2 border-b last:border-b-0">
-                                        <span className="pt-2 text-sm font-medium text-slate-600">{index + 1}.</span>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
-                                            <div className="w-full space-y-1">
-                                                <Controller
-                                                    control={form.control}
-                                                    name={`konsumsi.${index}.jenis`}
-                                                    render={({ field }) => (
-                                                        <SearchableSelect
-                                                            placeholder="Jenis Konsumsi"
-                                                            options={dynamicJenisKonsumsiOptions}
-                                                            value={field.value}
-                                                            onChange={field.onChange}
-                                                        />
-                                                    )}
-                                                />
-                                                {form.formState.errors.konsumsi?.[index]?.jenis && (
-                                                    <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.jenis?.message}</p>
-                                                )}
-                                            </div>
-                                            <div className="w-full space-y-1">
-                                                    <Controller
-                                                    control={form.control}
-                                                    name={`konsumsi.${index}.satuan`}
-                                                    render={({ field }) => (
-                                                        <SearchableSelect
-                                                            placeholder="Satuan"
-                                                            options={satuanOptions}
-                                                            value={field.value}
-                                                            onChange={field.onChange}
-                                                        />
-                                                    )}
-                                                />
-                                                {form.formState.errors.konsumsi?.[index]?.satuan && (
-                                                    <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.satuan?.message}</p>
-                                                )}
-                                            </div>
-                                            <div className="w-full space-y-1">
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Qty"
-                                                    {...form.register(`konsumsi.${index}.qty`)}
-                                                />
-                                                {form.formState.errors.konsumsi?.[index]?.qty && (
-                                                    <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.qty?.message}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => remove(index)}
-                                            className="mt-1 text-red-500 hover:bg-red-50 hover:text-red-600"
-                                            disabled={fields.length <= 1}
-                                        >
-                                            <Trash2 className="h-4 w-4"/>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="lokasi">Lokasi</Label>
+                                    <SearchableSelect
+                                        placeholder="Pilih lokasi"
+                                        options={lokasiOptions}
+                                        value={lokasiValue}
+                                        onChange={(val) => form.setValue("lokasi", val, { shouldValidate: true })}
+                                    />
+                                    {form.formState.errors.lokasi && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.lokasi.message}</p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="waktu">Waktu</Label>
+                                        <SearchableSelect
+                                            placeholder="Pilih waktu"
+                                            options={waktuOptions}
+                                            value={waktuValue}
+                                            onChange={(val) => form.setValue("waktu", val, { shouldValidate: true })}
+                                        />
+                                        {form.formState.errors.waktu && (
+                                            <p className="text-sm font-medium text-red-500">{form.formState.errors.waktu.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tamu">Tamu</Label>
+                                        <SearchableSelect
+                                            placeholder="Pilih jenis tamu"
+                                            options={tamuOptions}
+                                            value={tamuValue}
+                                            onChange={(val) => form.setValue("tamu", val, { shouldValidate: true })}
+                                        />
+                                        {form.formState.errors.tamu && (
+                                            <p className="text-sm font-medium text-red-500">{form.formState.errors.tamu.message}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="yangMengajukan">Yang Mengajukan</Label>
+                                    <Input
+                                        id="yangMengajukan"
+                                        {...form.register("yangMengajukan")}
+                                        disabled
+                                        className="bg-slate-100" // shadcn/ui style
+                                    />
+                                    {form.formState.errors.yangMengajukan && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.yangMengajukan.message}</p>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="untukBagian">Untuk Bagian</Label>
+                                    <SearchableSelect
+                                        placeholder="Pilih bagian"
+                                        options={bagianOptions}
+                                        value={bagianValue}
+                                        onChange={(val) => form.setValue("untukBagian", val, { shouldValidate: true })}
+                                    />
+                                    {form.formState.errors.untukBagian && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.untukBagian.message}</p>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="approval">Approval</Label>
+                                    <SearchableSelect
+                                        placeholder="Pilih approval"
+                                        options={approvalOptions}
+                                        value={approvalValue}
+                                        onChange={(val) => form.setValue("approval", val, { shouldValidate: true })}
+                                    />
+                                    {form.formState.errors.approval && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.approval.message}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-4 rounded-lg border p-4">
+                                    <div className="flex justify-between items-center">
+                                        <Label>Detail Konsumsi</Label>
+                                        <Button type="button" size="sm" onClick={() => append({ jenis: "", satuan: "", qty: "" })}>
+                                            <Plus className="h-4 w-4 mr-2"/>
+                                            Tambah
                                         </Button>
                                     </div>
-                                ))}
-                                {form.formState.errors.konsumsi?.root && (
-                                    <p className="text-sm font-medium text-red-500">{form.formState.errors.konsumsi.root.message}</p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="catatan">Catatan Tambahan (Opsional)</Label>
-                                <Input id="catatan" {...form.register("catatan")} placeholder="Contoh: 5 porsi vegetarian"/>
-                            </div>
-                        </form>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={onReturnToDashboard}>Batal</Button>
-                        <Button onClick={form.handleSubmit(handleNextStep)}>Lanjut ke Review</Button>
-                    </CardFooter>
-                </Card>
-            </FormStep>
-
-            {/* Step 2 */}
-            <FormStep step={2} currentStep={step}>
-                <Card>
-                    <CardHeader><CardTitle>Review Pesanan Anda</CardTitle></CardHeader>
-                    <CardContent className="space-y-3">
-                        {Object.entries(values).map(([key, val]) => {
-                            if (key === 'konsumsi' && Array.isArray(val)) {
-                                return (
-                                    <div key={key} className="pt-2 border-t">
-                                        <h4 className="text-sm font-semibold text-slate-800 mb-2">{labels[key]}:</h4>
-                                        <div className="space-y-2 pl-4">
-                                            {val.map((item, index) => (
-                                                <div key={index} className="flex justify-between text-sm p-2 bg-slate-50 rounded-md">
-                                                    <span className="font-medium text-slate-700">{index + 1}. {item.jenis}</span>
-                                                    <span className="text-slate-600">{item.qty} {item.satuan}</span>
+                                    {fields.map((field, index) => (
+                                        <div key={field.id} className="flex items-start gap-3 p-2 border-b last:border-b-0">
+                                            <span className="pt-2 text-sm font-medium text-slate-600">{index + 1}.</span>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
+                                                <div className="w-full space-y-1">
+                                                    <Controller
+                                                        control={form.control}
+                                                        name={`konsumsi.${index}.jenis`}
+                                                        render={({ field }) => (
+                                                            <SearchableSelect
+                                                                placeholder="Jenis Konsumsi"
+                                                                options={dynamicJenisKonsumsiOptions}
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                            />
+                                                        )}
+                                                    />
+                                                    {form.formState.errors.konsumsi?.[index]?.jenis && (
+                                                        <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.jenis?.message}</p>
+                                                    )}
                                                 </div>
-                                            ))}
+                                                <div className="w-full space-y-1">
+                                                    <Controller
+                                                        control={form.control}
+                                                        name={`konsumsi.${index}.satuan`}
+                                                        render={({ field }) => (
+                                                            <SearchableSelect
+                                                                placeholder="Satuan"
+                                                                options={satuanOptions}
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                            />
+                                                        )}
+                                                    />
+                                                    {form.formState.errors.konsumsi?.[index]?.satuan && (
+                                                        <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.satuan?.message}</p>
+                                                    )}
+                                                </div>
+                                                <div className="w-full space-y-1">
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Qty"
+                                                        {...form.register(`konsumsi.${index}.qty`)}
+                                                    />
+                                                    {form.formState.errors.konsumsi?.[index]?.qty && (
+                                                        <p className="text-xs text-red-500">{form.formState.errors.konsumsi?.[index]?.qty?.message}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => remove(index)}
+                                                className="mt-1 text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                disabled={fields.length <= 1}
+                                            >
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
                                         </div>
+                                    ))}
+                                    {form.formState.errors.konsumsi?.root && (
+                                        <p className="text-sm font-medium text-red-500">{form.formState.errors.konsumsi.root.message}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="catatan">Catatan Tambahan (Opsional)</Label>
+                                    <Input id="catatan" {...form.register("catatan")} placeholder="Contoh: 5 porsi vegetarian"/>
+                                </div>
+                            </form>
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="outline" onClick={onReturnToDashboard}>Batal</Button>
+                            <Button onClick={form.handleSubmit(handleNextStep)}>Lanjut ke Review</Button>
+                        </CardFooter>
+                    </Card>
+                </FormStep>
+
+                {/* Step 2 */}
+                <FormStep key="step2" step={2} currentStep={step}>
+                    <Card>
+                        <CardHeader><CardTitle>Review Pesanan Anda</CardTitle></CardHeader>
+                        <CardContent className="space-y-3">
+                            {Object.entries(values).map(([key, val]) => {
+                                if (key === 'konsumsi' && Array.isArray(val)) {
+                                    return (
+                                        <div key={key} className="pt-2 border-t">
+                                            <h4 className="text-sm font-semibold text-slate-800 mb-2">{labels[key]}:</h4>
+                                            <div className="space-y-2 pl-4">
+                                                {val.map((item, index) => (
+                                                    <div key={index} className="flex justify-between text-sm p-2 bg-slate-50 rounded-md">
+                                                        <span className="font-medium text-slate-700">{index + 1}. {item.jenis}</span>
+                                                        <span className="text-slate-600">{item.qty} {item.satuan}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                if (!val && key !== 'catatan') return null;
+
+                                return (
+                                    <div key={key} className="flex justify-between text-sm">
+                                        <span className="text-slate-500">{labels[key]}:</span>
+                                        <span className="font-medium text-slate-900 text-right">{String(val) || "-"}</span>
                                     </div>
                                 );
-                            }
-                            
-                            if (!val && key !== 'catatan') return null;
+                            })}
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="outline" onClick={handlePrevStep}>Kembali</Button>
+                            <Button onClick={form.handleSubmit(handleFinalSubmit)}>Kirim Pesanan</Button>
+                        </CardFooter>
+                    </Card>
+                </FormStep>
 
-                            return (
-                                <div key={key} className="flex justify-between text-sm">
-                                    <span className="text-slate-500">{labels[key]}:</span>
-                                    <span className="font-medium text-slate-900 text-right">{String(val) || "-"}</span>
-                                </div>
-                            );
-                        })}
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                        <Button variant="outline" onClick={handlePrevStep}>Kembali</Button>
-                        <Button onClick={form.handleSubmit(handleFinalSubmit)}>Kirim Pesanan</Button>
-                    </CardFooter>
-                </Card>
-            </FormStep>
-
-            {/* Step 3 */}
-            <FormStep step={3} currentStep={step}>
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center bg-white p-8 rounded-lg shadow-md border border-gray-200"
-                >
-                    <div className="text-green-500 w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-green-100 rounded-full">
-                        <CheckCircle2 />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-800">Pemesanan Berhasil!</h2>
-                    <p className="text-gray-600 mt-2">Pesanan Anda telah ditambahkan ke riwayat.</p>
-                    <Button onClick={onReturnToDashboard} className="mt-6">Kembali ke Dasbor</Button>
-                </motion.div>
-            </FormStep>
+                {/* Step 3 */}
+                <FormStep key="step3" step={3} currentStep={step}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center bg-white p-8 rounded-lg shadow-md border border-gray-200"
+                    >
+                        <div className="text-green-500 w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-green-100 rounded-full">
+                            <CheckCircle2 className="h-8 w-8" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-800">Pemesanan Berhasil!</h2>
+                        <p className="text-gray-600 mt-2">Pesanan Anda telah ditambahkan ke riwayat.</p>
+                        <Button onClick={onReturnToDashboard} className="mt-6">Kembali ke Dasbor</Button>
+                    </motion.div>
+                </FormStep>
+            </AnimatePresence>
         </div>
     );
 };
 
 export default PemesananForm;
-
