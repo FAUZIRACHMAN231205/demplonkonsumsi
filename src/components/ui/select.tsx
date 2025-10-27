@@ -6,12 +6,15 @@ const ChevronDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" hei
 interface SelectContextType {
     open: boolean;
     setOpen: (open: boolean) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onValueChange: (value: any) => void;
 }
 
 const SelectContext = createContext<SelectContextType | undefined>(undefined);
 
+// Fungsi di bawah ini tidak ada yang diubah
 const Select = ({ value, onValueChange, children }) => {
     const [open, setOpen] = useState(false);
     return (
