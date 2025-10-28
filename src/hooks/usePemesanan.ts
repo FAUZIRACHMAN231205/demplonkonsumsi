@@ -163,22 +163,22 @@ export function usePemesanan() {
   		// Anda bisa menambahkan validasi terpisah untuk Pemesanan jika perlu
   		setRiwayat(prevRiwayat => [newOrder, ...prevRiwayat]);
   		toast({ title: "🎉 Pemesanan Berhasil!", description: "Pesanan telah ditambahkan ke riwayat." });
-  		return true; // Indicate success
-  	} catch (error) {
-  		 if (error instanceof z.ZodError) {
-  		  console.error("Validation errors:", error.errors);
-  		  // Menampilkan error validasi pertama ke user
-  		  const firstError = error.errors[0];
-  		  toast({
-  			  title: "Input Tidak Valid",
-  			  description: `${firstError.path.join('.')} - ${firstError.message}`,
-  			  variant: "destructive",
-  		  });
-  		} else {
-  		  console.error("Gagal menambahkan pesanan:", error);
-  		  toast({ title: "Error", description: "Gagal menambahkan pesanan.", variant: "destructive" });
-  		}
-  		return false; // Indicate failure
+  		return true; // Indicate success
+  	} catch (error) {
+  		 if (error instanceof z.ZodError) {
+  		  console.error("Validation errors:", error.issues);
+  		  // Menampilkan error validasi pertama ke user
+  		  const firstError = error.issues[0];
+  		  toast({
+  			  title: "Input Tidak Valid",
+  			  description: `${firstError.path.join('.')} - ${firstError.message}`,
+  			  variant: "destructive",
+  		  });
+  		} else {
+  		  console.error("Gagal menambahkan pesanan:", error);
+  		  toast({ title: "Error", description: "Gagal menambahkan pesanan.", variant: "destructive" });
+  		}
+  		return false; // Indicate failure
   	}
   }, [toast]); // Include toast in dependencies
 

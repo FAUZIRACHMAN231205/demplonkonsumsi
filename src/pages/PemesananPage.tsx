@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // Keep useEffect import for potential future use
+import React, { useState } from 'react'; // Keep useEffect import for potential future use
 import { motion, AnimatePresence } from 'framer-motion';
 // DIUBAH: Menggunakan alias path '@/' lagi, asumsi ini benar
 import { usePemesanan } from '@/hooks/usePemesanan';
@@ -164,9 +164,8 @@ export default function PemesananPage() {
                 searchDate={searchDate}
                 filterStatus={filterStatus}
                 sortOrder={sortOrder}
-                // Modal state now handled by the Page, so these props might not be needed in Dashboard
-                // selectedOrder={selectedOrder}
-                // isDetailDialogOpen={isDetailDialogOpen}
+                selectedOrder={selectedOrder}
+                isDetailDialogOpen={isDetailDialogOpen}
               />
             ) : (
               <PemesananForm

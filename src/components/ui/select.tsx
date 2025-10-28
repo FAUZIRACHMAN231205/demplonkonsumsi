@@ -1,21 +1,29 @@
 import React, { createContext, useContext, useState } from 'react';
 import { cn } from '../../lib/utils';
 
-const ChevronDown = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
+const ChevronDown = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m6 9 6 6 6-6"/>
+    </svg>
+);
 
 interface SelectContextType {
     open: boolean;
     setOpen: (open: boolean) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onValueChange: (value: any) => void;
+    value: string | number | undefined;
+    onValueChange: (value: string | number) => void;
 }
 
 const SelectContext = createContext<SelectContextType | undefined>(undefined);
 
 // Fungsi di bawah ini tidak ada yang diubah
-const Select = ({ value, onValueChange, children }) => {
+interface SelectProps {
+    value: string | number | undefined;
+    onValueChange: (value: string | number) => void;
+    children: React.ReactNode;
+}
+
+const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
     const [open, setOpen] = useState(false);
     return (
         <SelectContext.Provider value={{ open, setOpen, value, onValueChange }}>
@@ -36,7 +44,11 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
 });
 SelectTrigger.displayName = "SelectTrigger";
 
-const SelectValue = ({ placeholder }) => {
+interface SelectValueProps {
+    placeholder?: string;
+}
+
+const SelectValue: React.FC<SelectValueProps> = ({ placeholder }) => {
     const context = useContext(SelectContext);
     if (!context) throw new Error("SelectValue must be used within a Select");
     const { value } = context;
@@ -44,8 +56,12 @@ const SelectValue = ({ placeholder }) => {
 };
 SelectValue.displayName = "SelectValue";
 
+interface SelectContentProps {
+    children: React.ReactNode;
+    className?: string;
+}
 
-const SelectContent = ({ children, className }) => {
+const SelectContent: React.FC<SelectContentProps> = ({ children, className }) => {
     const context = useContext(SelectContext);
     if (!context) throw new Error("SelectContent must be used within a Select");
     const { open } = context;
@@ -54,8 +70,13 @@ const SelectContent = ({ children, className }) => {
 };
 SelectContent.displayName = "SelectContent";
 
+interface SelectItemProps {
+    value: string | number;
+    children: React.ReactNode;
+    className?: string;
+}
 
-const SelectItem = ({ value, children, className }) => {
+const SelectItem: React.FC<SelectItemProps> = ({ value, children, className }) => {
     const context = useContext(SelectContext);
     if (!context) throw new Error("SelectItem must be used within a Select");
     const { setOpen, onValueChange } = context;

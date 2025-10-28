@@ -189,8 +189,6 @@ const AdminDashboard = () => {
                                  </div>)
                              ) : (
                                  <div className={cn(viewMode === 'list' ? "space-y-3" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4")}>
-                                     {/* Log sebelum mapping data */}
-                                     {console.log("[AdminDashboard] Mapping data:", filteredAndSortedRiwayat.length, "items")}
                                      <AnimatePresence>
                                       {filteredAndSortedRiwayat.map((item: Pemesanan) => {
                                           const config = statusConfig[item.status] || statusConfig['Dibatalkan'];
