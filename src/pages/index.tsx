@@ -18,28 +18,29 @@ import {
 import { AlertTriangle } from 'lucide-react';
 import type { Pemesanan, StatusHistoryItem } from '@/lib/schema';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 // == KOMPONEN HELPER ==
 
 const DetailItem = ({ label, value, fullWidth = false, badgeStatus }: { label: string, value: string | undefined | null, fullWidth?: boolean, badgeStatus?: Pemesanan['status'] }) => {
      const statusClasses = badgeStatus ? {
-        'Menunggu': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        'Disetujui': 'bg-purple-100 text-purple-800 border-purple-300',
-        'Ditolak': 'bg-red-100 text-red-800 border-red-300',
-        'Selesai': 'bg-green-100 text-green-800 border-green-300',
-        'Dibatalkan': 'bg-gray-100 text-gray-800 border-gray-300',
-        'Akan Datang': 'bg-blue-100 text-blue-800 border-blue-300',
+        'Menunggu': 'bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700',
+        'Disetujui': 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700',
+        'Ditolak': 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-200 dark:border-red-700',
+        'Selesai': 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700',
+        'Dibatalkan': 'bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600',
+        'Akan Datang': 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700',
      }[badgeStatus] : '';
 
     return (
         <div className={cn("text-sm", fullWidth && "col-span-2")}>
-            <strong className="block text-slate-500">{label}:</strong>
+            <strong className="block text-slate-500 dark:text-slate-400">{label}:</strong>
              {badgeStatus ? (
                  <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium border", statusClasses)}>
                      {value || "-"}
                  </span>
              ) : (
-                 <span className="text-gray-800 break-words">{value || "-"}</span>
+                 <span className="text-gray-800 dark:text-gray-200 break-words">{value || "-"}</span>
              )}
         </div>
     );
@@ -48,13 +49,13 @@ const DetailItem = ({ label, value, fullWidth = false, badgeStatus }: { label: s
 // Komponen Timeline Status
 const StatusTimeline = ({ history }: { history?: StatusHistoryItem[] }) => (
     <div className="mt-6">
-        <h4 className="font-semibold text-lg mb-4 text-gray-800">Riwayat Status</h4>
-        <div className="relative border-l-2 border-slate-200 ml-3">
+        <h4 className="font-semibold text-lg mb-4 text-gray-800 dark:text-gray-200">Riwayat Status</h4>
+        <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3">
             {Array.isArray(history) && history.length > 0 ? (
                 history.map((item, index) => (
-                    <div key={index} className="mb-6 pl-8 relative before:absolute before:left-[-11px] before:top-[5px] before:h-5 before:w-5 before:bg-blue-500 before:rounded-full before:border-4 before:border-white">
-                        <p className="font-semibold text-gray-700">{item.status}</p>
-                        <p className="text-sm text-gray-500">
+                    <div key={index} className="mb-6 pl-8 relative before:absolute before:left-[-11px] before:top-[5px] before:h-5 before:w-5 before:bg-blue-500 before:rounded-full before:border-4 before:border-white dark:before:border-slate-900">
+                        <p className="font-semibold text-gray-700 dark:text-gray-300">{item.status}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                             {item.timestamp ? (() => {
                                 try {
                                     const date = new Date(item.timestamp);
@@ -72,7 +73,7 @@ const StatusTimeline = ({ history }: { history?: StatusHistoryItem[] }) => (
                         </p>
                     </div>
                   ))
-            ) : <p className="text-sm text-gray-500 ml-8">Tidak ada riwayat status.</p>}
+            ) : <p className="text-sm text-gray-500 dark:text-gray-400 ml-8">Tidak ada riwayat status.</p>}
         </div>
     </div>
 );
@@ -102,12 +103,15 @@ export default function Home() {
   console.log("[Home] Rendering. Current view:", currentView, "isLoading:", isLoading);
 
   return (
-    <div className="bg-slate-50 min-h-screen font-sans text-slate-900">
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans text-slate-900 dark:text-slate-100 transition-colors">
       <style>{` @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap'); body { font-family: 'Poppins', sans-serif; }`}</style>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-        <header className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 tracking-tight">Pemesanan Konsumsi</h1>
-            <p className="text-base sm:text-lg text-gray-500 mt-1">Kelola semua pesanan konsumsi untuk acara Anda.</p>
+        <header className="text-center mb-8 relative">
+            <div className="absolute top-0 right-0">
+              <ThemeToggle />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 dark:text-gray-100 tracking-tight">Pemesanan Konsumsi</h1>
+            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mt-1">Kelola semua pesanan konsumsi untuk acara Anda.</p>
         </header>
 
         <AnimatePresence mode="wait">
@@ -173,12 +177,12 @@ export default function Home() {
                             {selectedOrder.catatan && <DetailItem label="Catatan" value={selectedOrder.catatan} fullWidth />}
 
                              <div className="mt-4">
-                                 <h4 className="font-semibold text-md mb-2 text-gray-800">Detail Konsumsi</h4>
+                                 <h4 className="font-semibold text-md mb-2 text-gray-800 dark:text-gray-200">Detail Konsumsi</h4>
                                  <div className="space-y-2">
                                      {Array.isArray(selectedOrder.konsumsi) && selectedOrder.konsumsi.map((item, index) => (
-                                         <div key={index} className="flex justify-between items-center text-sm p-2 bg-slate-50 rounded-md border">
-                                             <span className="font-medium text-slate-700">{index + 1}. {item.jenis}</span>
-                                             <span className="text-slate-600">{item.qty} {item.satuan}</span>
+                                         <div key={index} className="flex justify-between items-center text-sm p-2 bg-slate-50 dark:bg-slate-800/60 rounded-md border dark:border-slate-700">
+                                             <span className="font-medium text-slate-700 dark:text-slate-200">{index + 1}. {item.jenis}</span>
+                                             <span className="text-slate-600 dark:text-slate-300">{item.qty} {item.satuan}</span>
                                          </div>
                                      ))}
                                  </div>
@@ -201,7 +205,7 @@ export default function Home() {
         <AlertDialog open={isDeleteConfirmOpen} onOpenChange={actions.closeDeleteConfirm}>
              <AlertDialogContent>
                  <AlertDialogHeader>
-                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-4">
+                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                           <AlertTriangle className="h-6 w-6 text-red-600" />
                      </div>
                      <AlertDialogTitle className="text-center">Hapus Pesanan?</AlertDialogTitle>

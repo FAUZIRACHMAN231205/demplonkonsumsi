@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion, AnimatePresence } from "framer-motion";
 import * as z from "zod";
 
 // --- DEFINISI SCHEMA LOKAL (MENGGANTIKAN IMPOR) ---
@@ -70,17 +69,17 @@ import {
 // --- Info Card Component ---
 const InfoCard = ({ icon, title, children, variant = 'info' }: { icon: React.ReactNode, title: string, children: React.ReactNode, variant?: 'info' | 'warning' }) => {
     const variants = {
-        info: 'bg-blue-50 border-blue-200 text-blue-800',
-        warning: 'bg-amber-50 border-amber-200 text-amber-800',
-    };
+        info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
+        warning: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200',
+    } as const;
     const iconVariants = {
-        info: 'text-blue-500',
-        warning: 'text-amber-500',
-    }
+        info: 'text-blue-500 dark:text-blue-400',
+        warning: 'text-amber-500 dark:text-amber-400',
+    } as const
 
     return (
         <div className={cn(
-            'rounded-lg p-4 flex gap-4 border-l-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-1', 
+            'rounded-lg p-4 flex gap-4 border-l-4 hover:shadow-lg', 
             variants[variant]
         )}>
             <div className={cn("flex-shrink-0 mt-1", iconVariants[variant])}>
@@ -135,36 +134,33 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
     return (
         <div className="relative w-full" ref={containerRef}>
              {/* --- UBAH --- Ikon sekarang dirender di sini */}
-             {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400">{icon}</div>}
-             <button
+             {icon && <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500">{icon}</div>}
+                                     <button
                 type="button"
                 className={cn(
-                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 bg-white py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors", // Menggunakan Tailwind/Shadcn border
-                    !selectedLabel && "text-slate-500",
+                                                    "flex h-10 w-full items-center justify-between rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 py-2 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-50 dark:hover:bg-slate-600/80",
+                    !selectedLabel && "text-slate-500 dark:text-slate-400",
                     // --- UBAH --- Logika padding disesuaikan
                      icon ? "pl-10 pr-3" : "px-3"
                 )}
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {selectedLabel || placeholder}
-                <ChevronDown className={`h-4 w-4 opacity-50 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 opacity-50 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.98, y: -5 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.1 }}
-                    className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg"
+                <div
+                                        className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-lg"
                 >
                     <div className="p-2">
                         <div className="relative">
-                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
                             <input
                                 ref={searchInputRef}
                                 type="text"
                                 placeholder="Cari..."
-                                className="w-full rounded-md border border-gray-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" // Menggunakan Tailwind/Shadcn
+                                                                className="w-full rounded-md border border-gray-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-600 dark:text-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" // Menggunakan Tailwind/Shadcn
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
@@ -177,18 +173,18 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
                                     key={index}
                                     onClick={() => handleOptionClick(option.value)}
                                     className={cn(
-                                        "cursor-pointer rounded-md px-3 py-2 text-sm hover:bg-slate-100",
-                                        value === option.value && "bg-slate-100 font-medium"
+                                        "cursor-pointer rounded-md px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-600 dark:text-slate-100",
+                                        value === option.value && "bg-slate-100 dark:bg-slate-600 font-medium"
                                     )}
                                 >
                                     {option.label}
                                 </div>
                             ))
                         ) : (
-                            <div className="px-4 py-2 text-sm text-center text-gray-500">Tidak ada hasil</div>
+                            <div className="px-4 py-2 text-sm text-center text-gray-500 dark:text-slate-400">Tidak ada hasil</div>
                         )}
                     </div>
-                </motion.div>
+                </div>
             )}
         </div>
     );
@@ -200,15 +196,11 @@ const FormStep = ({ children, step, currentStep }: { children: React.ReactNode, 
     if (step !== currentStep) return null;
     
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+        <div
             className="mb-8"
         >
             {children}
-        </motion.div>
+        </div>
     );
 };
 
@@ -382,16 +374,14 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 p-4 md:p-8 font-['Poppins',_sans-serif]">
+        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-4 md:p-8 font-['Poppins',_sans-serif]">
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
             `}</style>
             
             <div className="max-w-4xl mx-auto">
                 {step === 1 && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                    <div
                         className="grid md:grid-cols-2 gap-4 mb-8"
                     >
                         <InfoCard
@@ -409,7 +399,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                         >
                             <p>Informasi untuk pemesanan order wajib di approve oleh approval</p>
                         </InfoCard>
-                    </motion.div>
+                    </div>
                 )}
 
 
@@ -418,34 +408,31 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                     {["Isi Form", "Review", "Selesai"].map((label, index) => (
                         <React.Fragment key={index}>
                             <div className="flex flex-col items-center gap-2">
-                                <motion.div 
-                                    layout
-                                    animate={step === index + 1 ? { scale: [1, 1.05, 1], transition: { repeat: Infinity, duration: 2, ease: "easeInOut" } } : {}}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full font-bold transition-all duration-300 ${ step > index + 1 ? "bg-green-500 text-white" : step === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500"}`} 
+                                <div
+                                    className={`w-10 h-10 flex items-center justify-center rounded-full font-bold ${ step > index + 1 ? "bg-green-500 text-white" : step === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300"}`} 
                                 >
                                     {step > index + 1 ? (
-                                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 15 }}>
+                                        <div>
                                             <CheckCircle2 className="h-5 w-5" />
-                                        </motion.div>
+                                        </div>
                                     ) : (
                                         index + 1
                                     )}
-                                </motion.div>
-                                <p className={`text-xs font-semibold ${step >= index + 1 ? "text-gray-800" : "text-gray-400"}`}>
+                                </div>
+                                <p className={`text-xs font-semibold ${step >= index + 1 ? "text-gray-800 dark:text-slate-200" : "text-gray-400 dark:text-slate-500"}`}>
                                     {label}
                                 </p>
                             </div>
                             {index < 2 && (
-                                <div className={`flex-1 h-1 rounded-full mt-5 transition-colors duration-500 ${step > index + 1 ? "bg-green-500" : "bg-gray-200"}`} />
+                                <div className={`flex-1 h-1 rounded-full mt-5 ${step > index + 1 ? "bg-green-500" : "bg-gray-200 dark:bg-slate-600"}`} />
                             )}
                         </React.Fragment>
                     ))}
                 </div>
 
-                <AnimatePresence mode="wait">
-                    {/* Step 1 */}
-                    <FormStep key="step1" step={1} currentStep={step}>
-                        <Card className="shadow-xl border border-slate-200/60 overflow-hidden">
+                {/* Step 1 */}
+                <FormStep key="step1" step={1} currentStep={step}>
+                        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700 overflow-hidden">
                             <CardHeader>
                                 <CardTitle>Form Pemesanan Konsumsi</CardTitle>
                                 <CardDescription>Isi detail acara Anda di bawah ini.</CardDescription>
@@ -472,8 +459,8 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                             <Label htmlFor="tanggalPermintaan">Tanggal Permintaan</Label>
                                             {/* --- TAMBAH IKON (WRAPPER) --- */}
                                             <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                                <Input id="tanggalPermintaan" type="date" {...form.register("tanggalPermintaan")} className="pl-10 bg-white" />
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                                <Input id="tanggalPermintaan" type="date" {...form.register("tanggalPermintaan")} className="pl-10 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
                                             </div>
                                             {form.formState.errors.tanggalPermintaan && (
                                                 <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPermintaan.message}</p>
@@ -483,8 +470,8 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                             <Label htmlFor="tanggalPengiriman">Tanggal Pengiriman</Label>
                                             {/* --- TAMBAH IKON (WRAPPER) --- */}
                                             <div className="relative">
-                                                <CalendarCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                                <Input id="tanggalPengiriman" type="date" {...form.register("tanggalPengiriman")} className="pl-10 bg-white" />
+                                                <CalendarCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                                <Input id="tanggalPengiriman" type="date" {...form.register("tanggalPengiriman")} className="pl-10 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
                                             </div>
                                             {form.formState.errors.tanggalPengiriman && (
                                                 <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPengiriman.message}</p>
@@ -542,12 +529,12 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         <Label htmlFor="yangMengajukan">Yang Mengajukan</Label>
                                         {/* --- TAMBAH IKON (WRAPPER) --- */}
                                         <div className="relative">
-                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                                             <Input
                                                 id="yangMengajukan"
                                                 {...form.register("yangMengajukan")}
                                                 disabled
-                                                className="bg-slate-100 pl-10" // shadcn/ui style
+                                                className="bg-slate-100 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 pl-10" // shadcn/ui style
                                             />
                                         </div>
                                         {form.formState.errors.yangMengajukan && (
@@ -585,25 +572,20 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         )}
                                     </div>
 
-                                    <div className="space-y-4 rounded-lg border bg-slate-50/50 p-4">
-                                        <div className="flex justify-between items-center">
-                                            <Label>Detail Konsumsi</Label>
+                                    <div className="space-y-4 rounded-lg border bg-slate-50/50 dark:bg-slate-800/70 dark:border-slate-700 p-4">
+                                        <div className="flex justify-between items-center gap-2">
+                                            <Label className="text-slate-800 dark:text-slate-200">Detail Konsumsi</Label>
                                             <Button type="button" size="sm" onClick={() => append({ jenis: "", satuan: "", qty: "" })} className="shadow-sm">
                                                 <Plus className="h-4 w-4 mr-2"/>
                                                 Tambah
                                             </Button>
                                         </div>
-                                        <AnimatePresence>
                                         {fields.map((field, index) => (
-                                            <motion.div 
-                                                key={field.id} 
-                                                layout
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, height: 0, padding: 0, margin: 0, transition: { duration: 0.2 } }}
-                                                className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-200/90 shadow-sm"
+                                            <div
+                                                key={field.id}
+                                                className="flex items-start gap-3 p-3 bg-white dark:bg-slate-700/70 dark:hover:bg-slate-600/70 rounded-lg border border-slate-200/90 dark:border-slate-500 shadow-sm"
                                             >
-                                                <span className="pt-2 text-sm font-medium text-blue-600">{index + 1}.</span>
+                                                <span className="pt-2 text-sm font-medium text-blue-600 dark:text-blue-400">{index + 1}.</span>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
                                                     <div className="w-full space-y-1">
                                                         <Controller
@@ -646,12 +628,12 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                                     <div className="w-full space-y-1">
                                                         {/* --- TAMBAH IKON (WRAPPER) --- */}
                                                         <div className="relative">
-                                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-400" />
                                                             <Input
                                                                 type="number"
                                                                 placeholder="Qty"
                                                                 {...form.register(`konsumsi.${index}.qty`)}
-                                                                className="pl-10 bg-white"
+                                                                className="pl-10 bg-white dark:bg-slate-600 dark:border-slate-500 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-300"
                                                             />
                                                         </div>
                                                         {form.formState.errors.konsumsi?.[index]?.qty && (
@@ -664,14 +646,13 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => remove(index)}
-                                                    className="mt-1 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
+                                                    className="mt-1 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-300"
                                                     disabled={fields.length <= 1}
                                                 >
                                                     <Trash2 className="h-4 w-4"/>
                                                 </Button>
-                                            </motion.div>
+                                            </div>
                                         ))}
-                                        </AnimatePresence>
                                         {form.formState.errors.konsumsi?.root && (
                                             <p className="text-sm font-medium text-red-500">{form.formState.errors.konsumsi.root.message}</p>
                                         )}
@@ -681,13 +662,13 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         <Label htmlFor="catatan">Catatan Tambahan (Opsional)</Label>
                                         {/* --- TAMBAH IKON (WRAPPER) --- */}
                                         <div className="relative">
-                                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                            <Input id="catatan" {...form.register("catatan")} placeholder="Contoh: 5 porsi vegetarian" className="pl-10 bg-white" />
+                                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+                                            <Input id="catatan" {...form.register("catatan")} placeholder="Contoh: 5 porsi vegetarian" className="pl-10 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
                                         </div>
                                     </div>
                                 </form>
                             </CardContent>
-                            <CardFooter className="flex justify-between bg-slate-50/70 p-6">
+                            <CardFooter className="flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
                                 <Button variant="outline" onClick={onReturnToDashboard} className="shadow-sm hover:shadow-md transition-all active:scale-95">Batal</Button>
                                 <Button onClick={form.handleSubmit(handleNextStep)} className="shadow-md hover:shadow-lg transition-all active:scale-95">Lanjut ke Review</Button>
                             </CardFooter>
@@ -705,13 +686,13 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                 {Object.entries(values).map(([key, val]) => {
                                     if (key === 'konsumsi' && Array.isArray(val)) {
                                         return (
-                                            <div key={key} className="pt-3 border-t">
-                                                <h4 className="text-sm font-semibold text-slate-800 mb-2">{labels[key]}:</h4>
+                                            <div key={key} className="pt-3 border-t dark:border-slate-700">
+                                                <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-2">{labels[key]}:</h4>
                                                 <div className="space-y-2 pl-4">
                                                     {val.map((item, index) => (
-                                                        <div key={index} className="flex justify-between text-sm p-2 bg-slate-100 rounded-md">
-                                                            <span className="font-medium text-slate-700">{index + 1}. {item.jenis}</span>
-                                                            <span className="text-slate-600">{item.qty} {item.satuan}</span>
+                                                        <div key={index} className="flex justify-between text-sm p-2 bg-slate-100 dark:bg-slate-800/60 rounded-md">
+                                                            <span className="font-medium text-slate-700 dark:text-slate-200">{index + 1}. {item.jenis}</span>
+                                                            <span className="text-slate-600 dark:text-slate-300">{item.qty} {item.satuan}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -722,14 +703,14 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                     if (!val && key !== 'catatan') return null;
 
                                     return (
-                                        <div key={key} className="flex justify-between text-sm py-2 border-b border-slate-100 last:border-b-0">
-                                            <span className="text-slate-500">{labels[key]}:</span>
-                                            <span className="font-medium text-slate-900 text-right">{String(val) || "-"}</span>
+                                        <div key={key} className="flex justify-between text-sm py-2 border-b border-slate-100 dark:border-slate-700 last:border-b-0">
+                                            <span className="text-slate-500 dark:text-slate-400">{labels[key]}:</span>
+                                            <span className="font-medium text-slate-900 dark:text-slate-200 text-right">{String(val) || "-"}</span>
                                         </div>
                                     );
                                 })}
                             </CardContent>
-                            <CardFooter className="flex justify-between bg-slate-50/70 p-6">
+                            <CardFooter className="flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
                                 <Button variant="outline" onClick={handlePrevStep} className="shadow-sm hover:shadow-md transition-all active:scale-95">Kembali</Button>
                                 <Button onClick={form.handleSubmit(handleFinalSubmit)} className="shadow-md hover:shadow-lg transition-all active:scale-95">Kirim Pesanan</Button>
                             </CardFooter>
@@ -738,43 +719,31 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
 
                     {/* Step 3 */}
                     <FormStep key="step3" step={3} currentStep={step}>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="text-center bg-white p-8 md:p-12 rounded-lg shadow-xl border border-gray-200"
+                        <div
+                            className="text-center bg-white dark:bg-slate-800 p-8 md:p-12 rounded-lg shadow-xl border border-gray-200 dark:border-slate-600"
                         >
-                            <motion.div 
-                                initial={{ scale: 0 }} 
-                                animate={{ scale: 1, transition: { delay: 0.1, type: 'spring', stiffness: 200 } }}
-                                className="text-green-500 w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-green-100 rounded-full"
+                            <div
+                                className="text-green-500 w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-green-100 dark:bg-green-900/30 rounded-full"
                             >
                                 <CheckCircle2 className="h-8 w-8" />
-                            </motion.div>
-                            <motion.h2 
-                                initial={{ opacity: 0, y: 10 }} 
-                                animate={{ opacity: 1, y: 0, transition: { delay: 0.3 } }}
-                                className="text-2xl font-bold text-gray-800"
+                            </div>
+                            <h2
+                                className="text-2xl font-bold text-gray-800 dark:text-slate-100"
                             >
                                 Pemesanan Berhasil!
-                            </motion.h2>
-                            <motion.p 
-                                initial={{ opacity: 0, y: 10 }} 
-                                animate={{ opacity: 1, y: 0, transition: { delay: 0.4 } }}
-                                className="text-gray-600 mt-2"
+                            </h2>
+                            <p
+                                className="text-gray-600 dark:text-slate-400 mt-2"
                             >
                                 Pesanan Anda telah ditambahkan ke riwayat.
-                            </motion.p>
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }} 
-                                animate={{ opacity: 1, y: 0, transition: { delay: 0.5 } }}
-                            >
-                                <Button onClick={onReturnToDashboard} className="mt-6 shadow-md hover:shadow-lg transition-all active:scale-95">
+                            </p>
+                            <div>
+                                <Button onClick={onReturnToDashboard} className="mt-6 shadow-md hover:shadow-lg active:scale-95">
                                     Kembali ke Dasbor
                                 </Button>
-                            </motion.div>
-                        </motion.div>
+                            </div>
+                        </div>
                     </FormStep>
-                </AnimatePresence>
             </div>
         </div>
     );

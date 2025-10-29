@@ -20,82 +20,67 @@ export function usePemesanan() {
   const [selectedOrder, setSelectedOrder] = useState<Pemesanan | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("Semua");
   const [sortOrder, setSortOrder] = useState<SortOrder>("Terbaru");
-  const [searchDate, setSearchDate] = useState<string>('');
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [searchDate, setSearchDate] = useState<string>('');
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Set false untuk instant loading
 
-  // State untuk konfirmasi hapus
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
-  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);
+  // State untuk konfirmasi hapus
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
+  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);
 
-  const { toast } = useToast(); // Gunakan hook toast
+  const { toast } = useToast(); // Gunakan hook toast
 
-  // --- LOCALSTORAGE EFFECTS ---
-  useEffect(() => {
-  	setIsLoading(true);
-  	// Simulasi loading dan update status otomatis
-  	const timer = setTimeout(() => {
-  	  try {
-  		const savedRiwayat = localStorage.getItem('riwayatPemesanan');
-  
-  		let loadedRiwayat: Pemesanan[] = [];
-  		if (savedRiwayat) {
-  		  loadedRiwayat = JSON.parse(savedRiwayat);
-  		  // Pastikan konsumsi selalu array
-  		  loadedRiwayat = loadedRiwayat.map(order => ({
-  			...order,
-  			konsumsi: Array.isArray(order.konsumsi) ? order.konsumsi : []
-  		  }));
-  		}
+  // --- LOCALSTORAGE EFFECTS ---
+  useEffect(() => {
+  	try {
+  	  const savedRiwayat = localStorage.getItem('riwayatPemesanan');
 
+  	  let loadedRiwayat: Pemesanan[] = [];
+  	  if (savedRiwayat) {
+  		loadedRiwayat = JSON.parse(savedRiwayat);
+  		// Pastikan konsumsi selalu array
+  		loadedRiwayat = loadedRiwayat.map(order => ({
+  		  ...order,
+  		  konsumsi: Array.isArray(order.konsumsi) ? order.konsumsi : []
+  		}));
+  	  }
 
-  		// Update status 'Menunggu'/'Disetujui' menjadi 'Selesai' jika tanggal sudah lewat
-  		const today = new Date();
-  		today.setHours(0, 0, 0, 0);
+  	  // Update status 'Menunggu'/'Disetujui' menjadi 'Selesai' jika tanggal sudah lewat
+  	  const today = new Date();
+  	  today.setHours(0, 0, 0, 0);
 
-  		const updatedRiwayat = loadedRiwayat.map(order => {
-  		  if ((order.status === 'Menunggu' || order.status === 'Disetujui') && new Date(order.tanggalPengiriman) < today) {
-  			  // Cek apakah sudah ada status 'Selesai' sebelumnya
-  			  const alreadyFinished = order.statusHistory?.some(h => h.status === 'Pesanan Selesai');
-  			  if (!alreadyFinished) {
-  				  const newHistoryEntry: StatusHistoryItem = {
-  					  timestamp: new Date().toLocaleString('id-ID'),
-  					  status: 'Pesanan Selesai',
-  					  oleh: 'Sistem',
-  				  };
-  				  return { ...order, status: 'Selesai' as OrderStatus, statusHistory: [...(order.statusHistory || []), newHistoryEntry] };
-  			  }
-  		  }
-  		  return order;
-  		});
+  	  const updatedRiwayat = loadedRiwayat.map(order => {
+  		if ((order.status === 'Menunggu' || order.status === 'Disetujui') && new Date(order.tanggalPengiriman) < today) {
+  		  // Cek apakah sudah ada status 'Selesai' sebelumnya
+  		  const alreadyFinished = order.statusHistory?.some(h => h.status === 'Pesanan Selesai');
+  		  if (!alreadyFinished) {
+  			const newHistoryEntry: StatusHistoryItem = {
+  			  timestamp: new Date().toLocaleString('id-ID'),
+  			  status: 'Pesanan Selesai',
+  			  oleh: 'Sistem',
+  			};
+  			return { ...order, status: 'Selesai' as OrderStatus, statusHistory: [...(order.statusHistory || []), newHistoryEntry] };
+  		  }
+  		}
+  		return order;
+  	  });
 
-  		setRiwayat(updatedRiwayat);
-
-  	  } catch (error) {
-  		console.error("Gagal memuat atau memproses data dari localStorage:", error);
-  		toast({ title: "Error", description: "Gagal memuat data tersimpan.", variant: "destructive" });
-  	  } finally {
-  		setIsLoading(false);
-  	  }
-  	}, 500); // Penundaan simulasi
-  	return () => clearTimeout(timer); // Cleanup timer
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Hanya dijalankan sekali saat mount
-
-
-  // Efek untuk menyimpan ke localStorage ketika riwayat berubah (dan tidak sedang loading)
-  useEffect(() => {
-  	if (!isLoading) {
-  	  try {
-  		localStorage.setItem('riwayatPemesanan', JSON.stringify(riwayat));
-  	  } catch (error) {
-  		console.error("Gagal menyimpan data ke localStorage:", error);
-  		toast({ title: "Error", description: "Gagal menyimpan perubahan.", variant: "destructive" });
-  	  }
-  	}
-  }, [riwayat, isLoading, toast]);
-
-  // --- DATA COMPUTATION (Filter & Sort) ---
+  	  setRiwayat(updatedRiwayat);
+  	} catch (error) {
+  	  console.error("Gagal memuat atau memproses data dari localStorage:", error);
+  	  toast({ title: "Error", description: "Gagal memuat data tersimpan.", variant: "destructive" });
+  	}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Hanya dijalankan sekali saat mount
+  // Efek untuk menyimpan ke localStorage ketika riwayat berubah
+  useEffect(() => {
+  	try {
+  	  localStorage.setItem('riwayatPemesanan', JSON.stringify(riwayat));
+  	} catch (error) {
+  	  console.error("Gagal menyimpan data ke localStorage:", error);
+  	}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [riwayat]);  // --- DATA COMPUTATION (Filter & Sort) ---
   const { counts, filteredAndSortedRiwayat } = useMemo(() => {
   	// Inisialisasi counts
   	const calculatedCounts: Record<OrderStatus | 'Total', number> = {
@@ -136,33 +121,33 @@ export function usePemesanan() {
   	};
   }, [riwayat, filterStatus, sortOrder, searchDate]);
 
-  // --- ACTIONS ---
-  const addOrder = useCallback((values: FormInputData) => {
-  	const initialHistory: StatusHistoryItem = {
-  	  timestamp: new Date().toLocaleString('id-ID'), // Format tanggal lokal
-  	  status: 'Pesanan Dibuat',
-  	  oleh: values.yangMengajukan || 'Pemesan', // Ambil dari form jika ada
-  	};
+  // --- ACTIONS ---
+  const addOrder = useCallback((values: FormInputData) => {
+  	const initialHistory: StatusHistoryItem = {
+  	  timestamp: new Date().toLocaleString('id-ID'), // Format tanggal lokal
+  	  status: 'Pesanan Dibuat',
+  	  oleh: values.yangMengajukan || 'Pemesan', // Ambil dari form jika ada
+  	};
 
-  	const newOrder: Pemesanan = {
-  	  ...values,
-  	  id: crypto.randomUUID(),
-  	  status: 'Menunggu', // Status awal
-  	  createdAt: new Date().toISOString(),
-  	  statusHistory: [initialHistory],
-  	  tanggal: values.tanggalPengiriman, // Pastikan field 'tanggal' diset untuk konsistensi
-  	  // Pastikan konsumsi selalu array saat membuat order baru
-  	  konsumsi: Array.isArray(values.konsumsi) ? values.konsumsi : []
-  	};
+  	const newOrder: Pemesanan = {
+  	  ...values,
+  	  id: crypto.randomUUID(),
+  	  status: 'Menunggu', // Status awal
+  	  createdAt: new Date().toISOString(),
+  	  statusHistory: [initialHistory],
+  	  tanggal: values.tanggalPengiriman, // Pastikan field 'tanggal' diset untuk konsistensi
+  	  // Pastikan konsumsi selalu array saat membuat order baru
+  	  konsumsi: Array.isArray(values.konsumsi) ? values.konsumsi : []
+  	};
 
-  	// Validasi dengan Zod sebelum menambahkan (opsional tapi bagus)
-  	try {
-  		// Validasi values sebelum menyimpannya sebagai newOrder
-  		formSchema.parse(values);
-  		// Pastikan newOrder juga valid (meskipun seharusnya sudah karena berasal dari values)
-  		// Anda bisa menambahkan validasi terpisah untuk Pemesanan jika perlu
-  		setRiwayat(prevRiwayat => [newOrder, ...prevRiwayat]);
-  		toast({ title: "🎉 Pemesanan Berhasil!", description: "Pesanan telah ditambahkan ke riwayat." });
+  	// Validasi dengan Zod sebelum menambahkan (opsional tapi bagus)
+  	try {
+  		// Validasi values sebelum menyimpannya sebagai newOrder
+  		formSchema.parse(values);
+  		// Pastikan newOrder juga valid (meskipun seharusnya sudah karena berasal dari values)
+  		// Anda bisa menambahkan validasi terpisah untuk Pemesanan jika perlu
+  		setRiwayat(prevRiwayat => [newOrder, ...prevRiwayat]);
+  		toast({ title: "🎉 Pemesanan Berhasil!", description: "Pesanan telah ditambahkan ke riwayat." });
   		return true; // Indicate success
   	} catch (error) {
   		 if (error instanceof z.ZodError) {
@@ -179,10 +164,9 @@ export function usePemesanan() {
   		  toast({ title: "Error", description: "Gagal menambahkan pesanan.", variant: "destructive" });
   		}
   		return false; // Indicate failure
-  	}
-  }, [toast]); // Include toast in dependencies
-
-  const updateStatus = useCallback((id: string, newStatus: 'Disetujui' | 'Ditolak' | 'Dibatalkan', updatedBy: string = 'Admin') => {
+  	}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  const updateStatus = useCallback((id: string, newStatus: 'Disetujui' | 'Ditolak' | 'Dibatalkan', updatedBy: string = 'Admin') => {
   	setRiwayat(prevRiwayat =>
   	  prevRiwayat.map(item => {
   		if (item.id === id) {
@@ -209,13 +193,14 @@ export function usePemesanan() {
   		}
   		return item;
   	  })
-  	);
-  	toast({ title: "Status Diperbarui", description: `Pesanan kini ${newStatus}.` });
-  }, [toast]); // Include toast in dependencies
+  	);
+  	toast({ title: "Status Diperbarui", description: `Pesanan kini ${newStatus}.` });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
-  // Fungsi untuk membuka modal konfirmasi hapus
-  const openDeleteConfirm = useCallback((id: string, acara: string) => {
+  // Fungsi untuk membuka modal konfirmasi hapus
+  const openDeleteConfirm = useCallback((id: string, acara: string) => {
   	setOrderToDeleteInfo({ id, acara });
   	setIsDeleteConfirmOpen(true);
   }, []);
@@ -226,16 +211,15 @@ export function usePemesanan() {
   	setIsDeleteConfirmOpen(false);
   }, []);
 
- // Fungsi yang dipanggil saat tombol "Ya, Hapus" ditekan
- const confirmDeleteOrder = useCallback(() => {
-  	if (orderToDeleteInfo) {
-  	  setRiwayat(prev => prev.filter(item => item.id !== orderToDeleteInfo.id));
-  	  toast({ title: "Pesanan Dihapus", description: `Pesanan "${orderToDeleteInfo.acara}" telah berhasil dihapus.` });
-  	  closeDeleteConfirm(); // Tutup modal setelah menghapus
-  	}
-  }, [orderToDeleteInfo, toast, closeDeleteConfirm]); // Include dependencies
-
-  const exportCSV = useCallback(() => {
+ // Fungsi yang dipanggil saat tombol "Ya, Hapus" ditekan
+ const confirmDeleteOrder = useCallback(() => {
+  	if (orderToDeleteInfo) {
+  	  setRiwayat(prev => prev.filter(item => item.id !== orderToDeleteInfo.id));
+  	  toast({ title: "Pesanan Dihapus", description: `Pesanan "${orderToDeleteInfo.acara}" telah berhasil dihapus.` });
+  	  closeDeleteConfirm(); // Tutup modal setelah menghapus
+  	}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderToDeleteInfo, closeDeleteConfirm]);  const exportCSV = useCallback(() => {
   	if (filteredAndSortedRiwayat.length === 0) {
   	  toast({ title: "Tidak Ada Data", description: "Tidak ada data riwayat untuk diekspor.", variant:"destructive" });
   	  return;
@@ -268,21 +252,21 @@ export function usePemesanan() {
   	link.download = `riwayat_pemesanan_${new Date().toISOString().split('T')[0]}.csv`;
   	document.body.appendChild(link); // Required for Firefox
   	link.click();
-  	document.body.removeChild(link);
-  	toast({ title: "Ekspor Berhasil", description: "Data riwayat telah diekspor ke CSV." });
-  }, [filteredAndSortedRiwayat, toast]); // Include dependencies
+  	document.body.removeChild(link);
+  	toast({ title: "Ekspor Berhasil", description: "Data riwayat telah diekspor ke CSV." });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredAndSortedRiwayat]);
 
-  const viewOrderDetails = useCallback((order: Pemesanan) => {
+  const viewOrderDetails = useCallback((order: Pemesanan) => {
   	setSelectedOrder(order);
   	setIsDetailDialogOpen(true);
   }, []);
 
-  	// Fungsi untuk menampilkan toast (bisa dipanggil dari mana saja)
-  	const showToast = useCallback((title: string, description: string, variant?: "default" | "destructive") => {
-  		toast({ title, description, variant });
-  }, [toast]);
-
-
+  	// Fungsi untuk menampilkan toast (bisa dipanggil dari mana saja)
+  	const showToast = useCallback((title: string, description: string, variant?: "default" | "destructive") => {
+  		toast({ title, description, variant });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return {
   	riwayat, // Data asli
   	filteredAndSortedRiwayat, // Data yang sudah difilter & sort
