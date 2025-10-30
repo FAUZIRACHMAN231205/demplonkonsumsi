@@ -43,6 +43,145 @@ export function usePemesanan() {
   		  ...order,
   		  konsumsi: Array.isArray(order.konsumsi) ? order.konsumsi : []
   		}));
+  	  } else {
+  		// DEMO DATA: Sample data lengkap untuk showcase semua fitur
+  		loadedRiwayat = [
+  		  {
+  			id: 'demo-1',
+  			acara: 'Rapat Koordinasi Tahunan 2025',
+  			tanggalPengiriman: '2025-11-05',
+  			tanggalPermintaan: '2025-10-25',
+  			tanggal: '2025-11-05',
+  			waktu: '09:00',
+  			lokasi: 'Ruang Meeting Lantai 3, Gedung Utama',
+  			tamu: 'Internal',
+  			yangMengajukan: 'Budi Santoso',
+  			untukBagian: 'Divisi Marketing',
+  			approval: 'Manager HRD',
+  			catatan: 'Mohon tambahkan snack box untuk peserta yang datang dari luar kota. Perlu vegetarian option untuk 3 orang.',
+  			konsumsi: [
+  			  { jenis: 'Nasi Box Ayam Goreng', qty: '25', satuan: 'box' },
+  			  { jenis: 'Nasi Box Ikan Bakar', qty: '15', satuan: 'box' },
+  			  { jenis: 'Nasi Box Vegetarian', qty: '3', satuan: 'box' },
+  			  { jenis: 'Coffee Break Premium', qty: '50', satuan: 'set' },
+  			  { jenis: 'Mineral Water 600ml', qty: '60', satuan: 'btl' },
+  			],
+  			status: 'Menunggu',
+  			createdAt: new Date('2025-10-25T14:30:00').toISOString(),
+  			statusHistory: [
+  			  {
+  				timestamp: new Date('2025-10-25T14:30:00').toLocaleString('id-ID'),
+  				status: 'Pesanan Dibuat',
+  				oleh: 'Budi Santoso',
+  			  },
+  			],
+  		  },
+  		  {
+  			id: 'demo-2',
+  			acara: 'Workshop Digital Marketing',
+  			tanggalPengiriman: '2025-11-10',
+  			tanggalPermintaan: '2025-10-28',
+  			tanggal: '2025-11-10',
+  			waktu: '13:00',
+  			lokasi: 'Aula Serbaguna, Gedung B',
+  			tamu: 'Eksternal',
+  			yangMengajukan: 'Siti Rahma',
+  			untukBagian: 'Divisi IT & Digital',
+  			approval: 'Direktur Operasional',
+  			catatan: 'Workshop dihadiri 80 peserta dari berbagai perusahaan. Butuh presentasi yang menarik untuk menu.',
+  			konsumsi: [
+  			  { jenis: 'Nasi Kotak Spesial', qty: '80', satuan: 'box' },
+  			  { jenis: 'Snack Box Premium', qty: '80', satuan: 'box' },
+  			  { jenis: 'Es Teh Manis', qty: '100', satuan: 'cup' },
+  			  { jenis: 'Kopi Hangat', qty: '50', satuan: 'cup' },
+  			  { jenis: 'Buah Potong Segar', qty: '10', satuan: 'platter' },
+  			],
+  			status: 'Disetujui',
+  			createdAt: new Date('2025-10-28T10:15:00').toISOString(),
+  			statusHistory: [
+  			  {
+  				timestamp: new Date('2025-10-28T10:15:00').toLocaleString('id-ID'),
+  				status: 'Pesanan Dibuat',
+  				oleh: 'Siti Rahma',
+  			  },
+  			  {
+  				timestamp: new Date('2025-10-29T09:20:00').toLocaleString('id-ID'),
+  				status: 'Disetujui',
+  				oleh: 'Admin',
+  			  },
+  			],
+  		  },
+  		  {
+  			id: 'demo-3',
+  			acara: 'Gathering Team Sales Q4',
+  			tanggalPengiriman: '2025-10-20',
+  			tanggalPermintaan: '2025-10-15',
+  			tanggal: '2025-10-20',
+  			waktu: '18:00',
+  			lokasi: 'Restoran Puncak Alam, Bogor',
+  			tamu: 'Internal',
+  			yangMengajukan: 'Ahmad Fauzi',
+  			untukBagian: 'Divisi Sales',
+  			approval: 'VP Sales',
+  			konsumsi: [
+  			  { jenis: 'Paket Prasmanan A', qty: '40', satuan: 'pax' },
+  			  { jenis: 'Welcome Drink', qty: '40', satuan: 'cup' },
+  			  { jenis: 'Dessert Platter', qty: '8', satuan: 'platter' },
+  			],
+  			status: 'Selesai',
+  			createdAt: new Date('2025-10-15T11:00:00').toISOString(),
+  			statusHistory: [
+  			  {
+  				timestamp: new Date('2025-10-15T11:00:00').toLocaleString('id-ID'),
+  				status: 'Pesanan Dibuat',
+  				oleh: 'Ahmad Fauzi',
+  			  },
+  			  {
+  				timestamp: new Date('2025-10-16T08:30:00').toLocaleString('id-ID'),
+  				status: 'Disetujui',
+  				oleh: 'Admin',
+  			  },
+  			  {
+  				timestamp: new Date('2025-10-20T19:00:00').toLocaleString('id-ID'),
+  				status: 'Pesanan Selesai',
+  				oleh: 'Sistem',
+  			  },
+  			],
+  		  },
+  		  {
+  			id: 'demo-4',
+  			acara: 'Meeting Urgent Board Directors',
+  			tanggalPengiriman: '2025-10-29',
+  			tanggalPermintaan: '2025-10-29',
+  			tanggal: '2025-10-29',
+  			waktu: '10:00',
+  			lokasi: 'Ruang Direksi, Lantai 8',
+  			tamu: 'VVIP',
+  			yangMengajukan: 'Sekretaris Direksi',
+  			untukBagian: 'Board of Directors',
+  			approval: 'CEO',
+  			catatan: 'Meeting mendadak, budget tidak dibatasi. Prioritas tertinggi.',
+  			konsumsi: [
+  			  { jenis: 'Executive Lunch Set', qty: '12', satuan: 'set' },
+  			  { jenis: 'Premium Coffee Selection', qty: '12', satuan: 'set' },
+  			  { jenis: 'Fresh Juice Bar', qty: '1', satuan: 'station' },
+  			],
+  			status: 'Ditolak',
+  			createdAt: new Date('2025-10-29T08:00:00').toISOString(),
+  			statusHistory: [
+  			  {
+  				timestamp: new Date('2025-10-29T08:00:00').toLocaleString('id-ID'),
+  				status: 'Pesanan Dibuat',
+  				oleh: 'Sekretaris Direksi',
+  			  },
+  			  {
+  				timestamp: new Date('2025-10-29T08:45:00').toLocaleString('id-ID'),
+  				status: 'Ditolak',
+  				oleh: 'Admin',
+  			  },
+  			],
+  		  },
+  		];
   	  }
 
   	  // Update status 'Menunggu'/'Disetujui' menjadi 'Selesai' jika tanggal sudah lewat

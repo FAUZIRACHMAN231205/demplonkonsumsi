@@ -7,9 +7,8 @@ import { cn } from '@/lib/utils';
 // --- UI COMPONENTS ---
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // Gunakan Tooltip shadcn
+import { TooltipProvider } from "@/components/ui/tooltip"; // Provider saja yang dipakai
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { 
     DropdownMenu, 
     DropdownMenuContent, 
@@ -18,9 +17,9 @@ import {
     DropdownMenuSeparator 
 } from "@/components/ui/dropdown-menu";
 
-// --- IKON BANTUAN ---
+// --- Ikon BANTUAN ---
 import {
-    PlusCircle, Clock, CheckCircle2, XCircle, List, Grid, Calendar, Download, FileText, MapPin, Eye, Trash2, MoreVertical
+    PlusCircle, Clock, CheckCircle2, XCircle, List, Grid, Calendar, Download, FileText, MapPin, Eye, Trash2, MoreVertical, Users, MessageSquare, Building2
 } from 'lucide-react';
 
 // --- HELPER: Calculate Status Progress ---
@@ -84,61 +83,191 @@ const StatusTimeline = ({ history }: { history?: StatusHistoryItem[] }) => (
 
 // --- Komponen Modal Detail ---
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'; // (PATH DIPERBAIKI)
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const PemesananDetailModal = ({ pesanan, isOpen, onClose }: { pesanan: Pemesanan | null, isOpen: boolean, onClose: () => void }) => {
     if (!pesanan) return null;
 
+    const statusConfig = {
+        'Menunggu': { bg: 'bg-gradient-to-r from-yellow-400 to-orange-400', text: 'text-white', icon: <Clock className="w-4 h-4" /> },
+        'Disetujui': { bg: 'bg-gradient-to-r from-purple-400 to-pink-400', text: 'text-white', icon: <CheckCircle2 className="w-4 h-4" /> },
+        'Ditolak': { bg: 'bg-gradient-to-r from-red-400 to-rose-400', text: 'text-white', icon: <XCircle className="w-4 h-4" /> },
+        'Selesai': { bg: 'bg-gradient-to-r from-green-400 to-emerald-400', text: 'text-white', icon: <CheckCircle2 className="w-4 h-4" /> },
+        'Dibatalkan': { bg: 'bg-gradient-to-r from-gray-400 to-slate-400', text: 'text-white', icon: <XCircle className="w-4 h-4" /> },
+    };
+
+    const currentStatus = statusConfig[pesanan.status];
+    const displayDate = pesanan.tanggalPengiriman ? new Date(pesanan.tanggalPengiriman).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Detail Pesanan: {pesanan.acara}</DialogTitle>
-                    <DialogDescription>
-                        Informasi lengkap mengenai pesanan Anda.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    {/* Detail Pesanan */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <DetailItem label="Acara" value={pesanan.acara} />
-                        <DetailItem label="Tanggal Pengiriman" value={pesanan.tanggalPengiriman ? new Date(pesanan.tanggalPengiriman).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}) : '-'} />
-                        <DetailItem label="Waktu" value={pesanan.waktu} />
-                        <DetailItem label="Lokasi" value={pesanan.lokasi} />
-                        <DetailItem label="Jenis Tamu" value={pesanan.tamu} />
-                        <DetailItem label="Pengaju" value={pesanan.yangMengajukan} />
-                        <DetailItem label="Bagian" value={pesanan.untukBagian} />
-                        <DetailItem label="Approval" value={pesanan.approval} />
-                        <DetailItem label="Status" value={pesanan.status} badgeStatus={pesanan.status} />
-                        <DetailItem label="Tgl Permintaan" value={pesanan.tanggalPermintaan ? new Date(pesanan.tanggalPermintaan).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'}) : '-'} />
-                    </div>
-                    {pesanan.catatan && <DetailItem label="Catatan" value={pesanan.catatan} fullWidth />}
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-0 gap-0">
+                {/* Header dengan gradient */}
+                <div className={cn("relative overflow-hidden p-6 pb-8", currentStatus.bg)}>
+                    <DialogHeader className="relative z-10">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                <DialogTitle className="text-xl font-bold text-white mb-1 break-words leading-tight">
+                                    {pesanan.acara}
+                                </DialogTitle>
+                                <DialogDescription className="text-white/90 text-sm">
+                                    {displayDate} · {pesanan.waktu || '--:--'}
+                                </DialogDescription>
+                            </div>
+                            <Badge className={cn("flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30", currentStatus.text)}>
+                                {currentStatus.icon}
+                                <span className="font-semibold text-xs">{pesanan.status}</span>
+                            </Badge>
+                        </div>
+                    </DialogHeader>
+                    {/* Decorative circles */}
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                    <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+                </div>
 
-                    {/* Detail Konsumsi */}
-                    <div className="mt-4">
-                        <h4 className="font-semibold text-md mb-2 text-gray-800 dark:text-slate-200">Detail Konsumsi</h4>
-                        <div className="space-y-2">
-                            {pesanan.konsumsi.map((item, index) => (
-                                <div key={index} className="flex justify-between items-center text-sm p-2 bg-slate-50 dark:bg-slate-700 rounded-md border dark:border-slate-600">
-                                    <span className="font-medium text-slate-700 dark:text-slate-300">{index + 1}. {item.jenis}</span>
-                                    <span className="text-slate-600 dark:text-slate-400">{item.qty} {item.satuan}</span>
-                                </div>
-                            ))}
+                {/* Content area */}
+                <div className="p-5 space-y-4">
+                    {/* Info Grid - Compact */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <InfoCard icon={<MapPin className="w-4 h-4 text-blue-500" />} label="Lokasi" value={pesanan.lokasi} />
+                        <InfoCard icon={<Users className="w-4 h-4 text-green-500" />} label="Tamu" value={pesanan.tamu} />
+                        <InfoCard icon={<Building2 className="w-4 h-4 text-purple-500" />} label="Bagian" value={pesanan.untukBagian} />
+                        <InfoCard icon={<FileText className="w-4 h-4 text-orange-500" />} label="Approval" value={pesanan.approval} />
+                    </div>
+
+                    <Separator className="dark:bg-slate-700" />
+
+                    {/* Pengaju info */}
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/50">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                            {pesanan.yangMengajukan.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Diajukan oleh</p>
+                            <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{pesanan.yangMengajukan}</p>
                         </div>
                     </div>
 
-                    <StatusTimeline history={pesanan.statusHistory} />
+                    {/* Catatan if exists */}
+                    {pesanan.catatan && (
+                        <div className="flex gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50">
+                            <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-0.5">Catatan</p>
+                                <p className="text-sm text-amber-900 dark:text-amber-100 break-words leading-relaxed">{pesanan.catatan}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Konsumsi - Colorful Cards */}
+                    <div>
+                        <h4 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                            <span className="w-1 h-4 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
+                            Detail Konsumsi ({pesanan.konsumsi.length})
+                        </h4>
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                            {pesanan.konsumsi.map((item, index) => {
+                                const colors = [
+                                    'from-rose-500 to-pink-500',
+                                    'from-blue-500 to-cyan-500',
+                                    'from-green-500 to-emerald-500',
+                                    'from-purple-500 to-violet-500',
+                                    'from-orange-500 to-amber-500',
+                                ];
+                                const colorClass = colors[index % colors.length];
+                                
+                                return (
+                                    <div key={index} className="group flex items-center gap-3 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-md hover:scale-[1.02] transition-all duration-200">
+                                        <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-xs shadow-sm", colorClass)}>
+                                            {index + 1}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">{item.jenis}</p>
+                                        </div>
+                                        <Badge variant="secondary" className="font-semibold text-xs tabular-nums shrink-0">
+                                            {item.qty} {item.satuan}
+                                        </Badge>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Timeline - Compact */}
+                    {pesanan.statusHistory && pesanan.statusHistory.length > 0 && (
+                        <div>
+                            <h4 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                <span className="w-1 h-4 bg-gradient-to-b from-green-500 to-blue-500 rounded-full" />
+                                Riwayat Status
+                            </h4>
+                            <div className="space-y-2">
+                                {pesanan.statusHistory.map((item, index) => {
+                                    const isLast = index === pesanan.statusHistory!.length - 1;
+                                    return (
+                                        <div key={index} className="flex gap-3 group">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                                </div>
+                                                {!isLast && <div className="w-0.5 h-full bg-gradient-to-b from-slate-300 to-transparent dark:from-slate-600 mt-1" />}
+                                            </div>
+                                            <div className="flex-1 pb-3">
+                                                <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{item.status}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID', { 
+                                                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                                                    }) : '-'} · {item.oleh}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <DialogFooter>
+
+                {/* Footer */}
+                <DialogFooter className="p-4 pt-2 border-t dark:border-slate-700">
                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">
+                        <Button type="button" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md">
                             Tutup
                         </Button>
                     </DialogClose>
                 </DialogFooter>
+
+                {/* Custom scrollbar styles */}
+                <style jsx>{`
+                    .custom-scrollbar::-webkit-scrollbar {
+                        width: 6px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                        background: #cbd5e1;
+                        border-radius: 3px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                        background: #94a3b8;
+                    }
+                `}</style>
             </DialogContent>
         </Dialog>
     );
 };
+
+// Helper: Compact Info Card
+const InfoCard = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | undefined | null }) => (
+    <div className="flex gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow">
+        <div className="flex-shrink-0 mt-0.5">{icon}</div>
+        <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-medium">{label}</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" title={value || '-'}>{value || '-'}</p>
+        </div>
+    </div>
+);
 
 // --- Helper component Detail Item ---
 const DetailItem = ({ label, value, fullWidth = false, badgeStatus }: { label: string, value: string | undefined | null, fullWidth?: boolean, badgeStatus?: Pemesanan['status'] }) => {
@@ -169,13 +298,13 @@ const DetailItem = ({ label, value, fullWidth = false, badgeStatus }: { label: s
 // --- Komponen DateWidget dihapus ---
 
 const StatCard = ({ icon, title, value, iconBgClass }: { icon: React.ReactNode, title: string, value: number, iconBgClass: string }) => (
-    <Card className="hover:shadow-lg active:shadow-xl transition-shadow p-4 sm:p-5 h-full dark:bg-slate-800/80 dark:border-slate-600">
-        <div className="flex items-center justify-between gap-3">
+    <Card className="hover:shadow-lg active:shadow-xl transition-shadow p-2.5 xs:p-3 sm:p-4 h-full dark:bg-slate-800/80 dark:border-slate-600">
+        <div className="flex items-center justify-between gap-1.5 xs:gap-2">
             <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-300 mb-1">{title}</p>
-                <p className="text-3xl sm:text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tabular-nums">{value}</p>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-300 mb-0.5 xs:mb-1 truncate leading-tight">{title}</p>
+                <p className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none">{value}</p>
             </div>
-            <div className={cn("p-3 rounded-xl flex-shrink-0", iconBgClass)}>
+            <div className={cn("p-1.5 xs:p-2 sm:p-2.5 rounded-md xs:rounded-lg flex-shrink-0", iconBgClass)}>
                 {icon}
             </div>
         </div>
@@ -257,21 +386,21 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                     </div>
 
                     {/* Stat Cards - Mobile-First Optimized */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 xs:gap-3 sm:gap-4 mb-4 xs:mb-5 sm:mb-8">
                         <StatCard 
-                            icon={<Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-400" />} 
+                            icon={<Clock className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400" />} 
                             title="Menunggu" 
                             value={counts.Menunggu} 
                             iconBgClass="bg-yellow-100 dark:bg-yellow-500/20" 
                         />
                         <StatCard 
-                            icon={<CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />} 
+                            icon={<CheckCircle2 className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />} 
                             title="Selesai" 
                             value={counts.Selesai} 
                             iconBgClass="bg-green-100 dark:bg-green-500/20" 
                         />
                         <StatCard 
-                            icon={<XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600 dark:text-red-400" />} 
+                            icon={<XCircle className="w-3.5 h-3.5 xs:w-4 xs:h-4 sm:w-5 sm:h-5 text-red-600 dark:text-red-400" />} 
                             title="Ditolak/Batal" 
                             value={(counts.Ditolak || 0) + (counts.Dibatalkan || 0)} 
                             iconBgClass="bg-red-100 dark:bg-red-500/20" 

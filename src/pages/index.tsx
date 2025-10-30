@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { usePemesanan } from '@/hooks/usePemesanan';
+import { useSharedPemesanan } from '@/context/PemesananContext';
 import PemesananDashboard from '@/components/pemesanan/PemesananDashboard';
 import PemesananForm from '@/components/pemesanan/PemesananForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -82,7 +81,7 @@ const StatusTimeline = ({ history }: { history?: StatusHistoryItem[] }) => (
 export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'form'>('dashboard');
 
-  const {
+    const {
     riwayat,
     filteredAndSortedRiwayat,
     counts,
@@ -95,7 +94,7 @@ export default function Home() {
     sortOrder,
     isDeleteConfirmOpen,
     orderToDeleteInfo,
-  } = usePemesanan();
+    } = useSharedPemesanan();
 
   const handleStartNewOrder = () => setCurrentView('form');
   const returnToDashboard = () => setCurrentView('dashboard');
@@ -114,41 +113,31 @@ export default function Home() {
             <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mt-1">Kelola semua pesanan konsumsi untuk acara Anda.</p>
         </header>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentView}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.2 }}
-          >
-            {currentView === 'dashboard' ? (
-              <PemesananDashboard
-                isLoading={isLoading}
-                filteredAndSortedRiwayat={filteredAndSortedRiwayat}
-                counts={counts}
-                actions={actions}
-                onNewOrderClick={handleStartNewOrder}
-                searchDate={searchDate}
-                filterStatus={filterStatus}
-                sortOrder={sortOrder}
-                selectedOrder={selectedOrder}
-                isDetailDialogOpen={isDetailDialogOpen}
-              />
-            ) : (
-              <PemesananForm
-                riwayat={riwayat}
-                onFormSubmit={(values) => {
-                  console.log("[Home] Form submitted, attempting to add order:", values);
-                  const success = actions.addOrder(values);
-                  console.log("[Home] addOrder success status:", success);
-                  return success;
-                }}
-                onReturnToDashboard={returnToDashboard}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
+                {currentView === 'dashboard' ? (
+                    <PemesananDashboard
+                        isLoading={isLoading}
+                        filteredAndSortedRiwayat={filteredAndSortedRiwayat}
+                        counts={counts}
+                        actions={actions}
+                        onNewOrderClick={handleStartNewOrder}
+                        searchDate={searchDate}
+                        filterStatus={filterStatus}
+                        sortOrder={sortOrder}
+                        selectedOrder={selectedOrder}
+                        isDetailDialogOpen={isDetailDialogOpen}
+                    />
+                ) : (
+                    <PemesananForm
+                        riwayat={riwayat}
+                        onFormSubmit={(values) => {
+                            console.log("[Home] Form submitted, attempting to add order:", values);
+                            const success = actions.addOrder(values);
+                            console.log("[Home] addOrder success status:", success);
+                            return success;
+                        }}
+                        onReturnToDashboard={returnToDashboard}
+                    />
+                )}
 
         {/* Modal Detail */}
         <Dialog open={isDetailDialogOpen} onOpenChange={actions.setIsDetailDialogOpen}>
