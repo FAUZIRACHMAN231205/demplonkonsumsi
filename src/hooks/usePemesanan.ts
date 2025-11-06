@@ -16,19 +16,16 @@ interface OrderToDeleteInfo {
 }
 
 export function usePemesanan() {
-  const [riwayat, setRiwayat] = useState<Pemesanan[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Pemesanan | null>(null);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>("Semua");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("Terbaru");
+  const [riwayat, setRiwayat] = useState<Pemesanan[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<Pemesanan | null>(null);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("Semua");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("Terbaru");
   const [searchDate, setSearchDate] = useState<string>('');
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false); // Set false untuk instant loading
 
   // State untuk konfirmasi hapus
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
-  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);
-
-  const { toast } = useToast(); // Gunakan hook toast
+  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);  const { toast } = useToast(); // Gunakan hook toast
 
   // --- LOCALSTORAGE EFFECTS ---
   useEffect(() => {
@@ -51,7 +48,6 @@ export function usePemesanan() {
   			acara: 'Rapat Koordinasi Tahunan 2025',
   			tanggalPengiriman: '2025-11-05',
   			tanggalPermintaan: '2025-10-25',
-  			tanggal: '2025-11-05',
   			waktu: '09:00',
   			lokasi: 'Ruang Meeting Lantai 3, Gedung Utama',
   			tamu: 'Internal',
@@ -81,7 +77,6 @@ export function usePemesanan() {
   			acara: 'Workshop Digital Marketing',
   			tanggalPengiriman: '2025-11-10',
   			tanggalPermintaan: '2025-10-28',
-  			tanggal: '2025-11-10',
   			waktu: '13:00',
   			lokasi: 'Aula Serbaguna, Gedung B',
   			tamu: 'Eksternal',
@@ -116,7 +111,6 @@ export function usePemesanan() {
   			acara: 'Gathering Team Sales Q4',
   			tanggalPengiriman: '2025-10-20',
   			tanggalPermintaan: '2025-10-15',
-  			tanggal: '2025-10-20',
   			waktu: '18:00',
   			lokasi: 'Restoran Puncak Alam, Bogor',
   			tamu: 'Internal',
@@ -153,7 +147,6 @@ export function usePemesanan() {
   			acara: 'Meeting Urgent Board Directors',
   			tanggalPengiriman: '2025-10-29',
   			tanggalPermintaan: '2025-10-29',
-  			tanggal: '2025-10-29',
   			waktu: '10:00',
   			lokasi: 'Ruang Direksi, Lantai 8',
   			tamu: 'VVIP',
@@ -218,7 +211,6 @@ export function usePemesanan() {
   	} catch (error) {
   	  console.error("Gagal menyimpan data ke localStorage:", error);
   	}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riwayat]);  // --- DATA COMPUTATION (Filter & Sort) ---
   const { counts, filteredAndSortedRiwayat } = useMemo(() => {
   	// Inisialisasi counts
@@ -274,7 +266,6 @@ export function usePemesanan() {
   	  status: 'Menunggu', // Status awal
   	  createdAt: new Date().toISOString(),
   	  statusHistory: [initialHistory],
-  	  tanggal: values.tanggalPengiriman, // Pastikan field 'tanggal' diset untuk konsistensi
   	  // Pastikan konsumsi selalu array saat membuat order baru
   	  konsumsi: Array.isArray(values.konsumsi) ? values.konsumsi : []
   	};
@@ -406,22 +397,21 @@ export function usePemesanan() {
   		toast({ title, description, variant });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return {
-  	riwayat, // Data asli
-  	filteredAndSortedRiwayat, // Data yang sudah difilter & sort
-  	counts, // Jumlah status
-  	selectedOrder, // Order yang dipilih untuk detail
-  	isDetailDialogOpen, // Status modal detail
-  	isLoading, // Status loading
-  	searchDate, // State tanggal pencarian
-  	filterStatus, // State filter status
-  	sortOrder, // State urutan
-  	isDeleteConfirmOpen, // Status modal konfirmasi hapus
-  	orderToDeleteInfo, // Info order yang akan dihapus
-  	actions: {
-  	  addOrder,
-  	  updateStatus,
-  	  // deleteOrder: confirmDeleteOrder, // Ganti nama agar lebih jelas ini adalah konfirmasi
+  return {
+  	riwayat, // Data asli
+  	filteredAndSortedRiwayat, // Data yang sudah difilter & sort
+  	counts, // Jumlah status
+  	selectedOrder, // Order yang dipilih untuk detail
+  	isDetailDialogOpen, // Status modal detail
+  	searchDate, // State tanggal pencarian
+  	filterStatus, // State filter status
+  	sortOrder, // State urutan
+  	isDeleteConfirmOpen, // Status modal konfirmasi hapus
+  	orderToDeleteInfo, // Info order yang akan dihapus
+  	actions: {
+  	  addOrder,
+  	  updateStatus,
+  	  // deleteOrder: confirmDeleteOrder, // Ganti nama agar lebih jelas ini adalah konfirmasi
   	  exportCSV,
   	  viewOrderDetails,
   	  setFilterStatus,

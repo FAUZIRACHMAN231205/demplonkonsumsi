@@ -88,7 +88,6 @@ export default function Home() {
     actions,
     selectedOrder,
     isDetailDialogOpen,
-    isLoading,
     searchDate,
     filterStatus,
     sortOrder,
@@ -99,11 +98,8 @@ export default function Home() {
   const handleStartNewOrder = () => setCurrentView('form');
   const returnToDashboard = () => setCurrentView('dashboard');
 
-  console.log("[Home] Rendering. Current view:", currentView, "isLoading:", isLoading);
-
   return (
     <div className="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans text-slate-900 dark:text-slate-100 transition-colors">
-      <style>{` @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap'); body { font-family: 'Poppins', sans-serif; }`}</style>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
         <header className="text-center mb-8 relative">
             <div className="absolute top-0 right-0">
@@ -115,7 +111,6 @@ export default function Home() {
 
                 {currentView === 'dashboard' ? (
                     <PemesananDashboard
-                        isLoading={isLoading}
                         filteredAndSortedRiwayat={filteredAndSortedRiwayat}
                         counts={counts}
                         actions={actions}

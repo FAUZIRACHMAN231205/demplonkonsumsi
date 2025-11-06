@@ -39,11 +39,9 @@ export type StatusHistoryItem = {
 // Tipe data Pemesanan berdasarkan skema Zod + tambahan
 export type Pemesanan = z.infer<typeof formSchema> & {
   id: string;
-  status: 'Menunggu' | 'Disetujui' | 'Ditolak' | 'Selesai' | 'Dibatalkan'; // Sesuaikan status
+  status: 'Menunggu' | 'Disetujui' | 'Ditolak' | 'Selesai' | 'Dibatalkan';
   createdAt: string;
-  statusHistory: StatusHistoryItem[]; // Tambahkan riwayat status
-  // Ganti 'tanggalPermintaan' menjadi 'tanggal' agar konsisten dengan dashboard
-  tanggal: string; // Menyamakan dengan field di dashboard
+  statusHistory: StatusHistoryItem[];
 };
 
 // Tipe data input form (tanpa id, status, createdAt, statusHistory)

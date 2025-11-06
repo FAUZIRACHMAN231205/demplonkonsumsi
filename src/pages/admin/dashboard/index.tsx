@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react"; 
 // DIUBAH: Impor hook dari context, bukan dari direktori hooks
 import { useSharedPemesanan } from '@/context/PemesananContext';
-import { Pemesanan } from '../lib/schema'; // Sesuaikan path jika perlu
+import { Pemesanan } from '../../../lib/schema'; // Sesuaikan path jika perlu
 // Impor UI components & icons jika perlu
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -17,22 +17,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 // --- Komponen StatCard (bisa diambil dari Dashboard atau didefinisikan ulang) ---
 const StatCard = ({ icon, title, value, iconBgClass }: { icon: React.ReactNode, title: string, value: number, iconBgClass: string }) => (
-    <Card className="transition-all duration-300 hover:shadow-lg p-2.5 xs:p-3 sm:p-4 h-full dark:bg-slate-800">
+    <Card className="hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 p-2.5 xs:p-3 sm:p-4 h-full dark:bg-slate-800 cursor-pointer group">
         <div className="flex items-center justify-between gap-1.5 xs:gap-2">
             <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate leading-tight">{title}</p>
-                <p className="text-lg xs:text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none mt-0.5 xs:mt-1">{value}</p>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate leading-tight group-hover:text-slate-700 dark:group-hover:text-slate-100 transition-colors">{title}</p>
+                <p className="text-lg xs:text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none mt-0.5 xs:mt-1 group-hover:scale-110 transition-transform duration-300 origin-left">{value}</p>
             </div>
-            <div className={cn("p-1.5 xs:p-2 sm:p-2.5 rounded-md xs:rounded-lg flex-shrink-0", iconBgClass)}>
+            <div className={cn("p-1.5 xs:p-2 sm:p-2.5 rounded-md xs:rounded-lg flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300", iconBgClass)}>
                  {icon}
             </div>
         </div>
     </Card>
 );
-
-// --- Komponen Skeleton ---
-const Skeleton = ({ className }: { className?: string }) => <div className={cn("animate-pulse rounded-md bg-slate-200", className)} />;
-
 
 // --- Komponen Utama Admin Dashboard ---
 const AdminDashboard = () => {
@@ -43,14 +39,10 @@ const AdminDashboard = () => {
         filteredAndSortedRiwayat, // Data yang sudah difilter/sort
         counts,
         actions,
-        isLoading,
         searchDate,
         filterStatus,
         sortOrder,
     } = useSharedPemesanan(); // Gunakan shared hook
-
-    // Log data yang diterima dari context saat komponen render
-  console.log("[AdminDashboard] Rendering...", { isLoading, filterStatus, rows: filteredAndSortedRiwayat.length });
 
   // Pencarian & pagination lokal
   const [query, setQuery] = useState("");
@@ -95,7 +87,6 @@ const AdminDashboard = () => {
  return (
      <TooltipProvider>
         <div className="bg-slate-50 dark:bg-slate-900 min-h-screen font-['Poppins',_sans-serif] transition-colors">
-            <style>{` @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap'); body { font-family: 'Poppins', sans-serif; } `}</style>
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div>
@@ -185,13 +176,7 @@ const AdminDashboard = () => {
                              </div>
 
                              {/* Tabel Pesanan (shadcn/ui) */}
-                             {isLoading ? (
-                               <div className="space-y-2">
-                                 {Array.from({ length: 5 }).map((_, i) => (
-                                   <Skeleton key={i} className="h-8 w-full" />
-                                 ))}
-                               </div>
-                             ) : filteredRows.length === 0 ? (
+                             {filteredRows.length === 0 ? (
                                <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
                                  <h4 className="text-lg font-semibold text-slate-700 dark:text-slate-200">Tidak Ada Pesanan</h4>

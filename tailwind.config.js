@@ -1,11 +1,26 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+import tailwindcssAnimate from 'tailwindcss-animate';
+
+const config = {
   darkMode: ["class"],
   content: [
     "./src/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          'var(--font-sans)',
+          'ui-sans-serif',
+          'system-ui',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'Noto Sans',
+          'sans-serif',
+        ],
+      },
       screens: {
         'xs': '475px', // Extra small breakpoint for mobile-first design
       },
@@ -58,5 +73,7 @@ export default {
       }
     }
   },
-  plugins: [require("tailwindcss-animate")],
-}
+  plugins: [tailwindcssAnimate],
+};
+
+export default config;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pemesanan, StatusHistoryItem } from '@/lib/schema'; // (PATH DIPERBAIKI)
+import { Pemesanan } from '@/lib/schema';
 
 // --- UTILITY: Class Name Merger ---
 import { cn } from '@/lib/utils';
@@ -19,7 +19,7 @@ import {
 
 // --- Ikon BANTUAN ---
 import {
-    PlusCircle, Clock, CheckCircle2, XCircle, List, Grid, Calendar, Download, FileText, MapPin, Eye, Trash2, MoreVertical, Users, MessageSquare, Building2
+    PlusCircle, Clock, CheckCircle2, XCircle, List, Grid, Calendar, Download, FileText, MapPin, Eye, Trash2, MoreVertical
 } from 'lucide-react';
 
 // --- HELPER: Calculate Status Progress ---
@@ -60,41 +60,58 @@ const StatusProgressBar = ({ status }: { status: Pemesanan['status'] }) => {
     );
 };
 
-// --- KOMPONEN TIMELINE STATUS ---
-const StatusTimeline = ({ history }: { history?: StatusHistoryItem[] }) => (
-    <div className="mt-6">
-        <h4 className="font-semibold text-lg mb-4 text-gray-800">Riwayat Status</h4>
-        <div className="relative border-l-2 border-slate-200 ml-3">
-            {Array.isArray(history) && history.length > 0 ? (
-                history.map((item, index) => (
-                    <div key={index} className="mb-8 pl-8 relative before:absolute before:left-[-11px] before:top-[5px] before:h-5 before:w-5 before:bg-blue-500 before:rounded-full before:border-4 before:border-white">
-                        <p className="font-semibold text-gray-700">{item.status}</p>
-                        <p className="text-sm text-gray-500">
-                            {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID', {
-                                day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                             }) : 'Tanggal tidak valid'} oleh {item.oleh}
-                        </p>
-                    </div>
-                ))
-            ) : <p className="text-sm text-gray-500 ml-8">Tidak ada riwayat status.</p>}
-        </div>
-    </div>
-);
-
 // --- Komponen Modal Detail ---
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'; // (PATH DIPERBAIKI)
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogTitle, DialogClose } from '@/components/ui/dialog';
 
 const PemesananDetailModal = ({ pesanan, isOpen, onClose }: { pesanan: Pemesanan | null, isOpen: boolean, onClose: () => void }) => {
     if (!pesanan) return null;
 
     const statusConfig = {
-        'Menunggu': { bg: 'bg-gradient-to-r from-yellow-400 to-orange-400', text: 'text-white', icon: <Clock className="w-4 h-4" /> },
-        'Disetujui': { bg: 'bg-gradient-to-r from-purple-400 to-pink-400', text: 'text-white', icon: <CheckCircle2 className="w-4 h-4" /> },
-        'Ditolak': { bg: 'bg-gradient-to-r from-red-400 to-rose-400', text: 'text-white', icon: <XCircle className="w-4 h-4" /> },
-        'Selesai': { bg: 'bg-gradient-to-r from-green-400 to-emerald-400', text: 'text-white', icon: <CheckCircle2 className="w-4 h-4" /> },
-        'Dibatalkan': { bg: 'bg-gradient-to-r from-gray-400 to-slate-400', text: 'text-white', icon: <XCircle className="w-4 h-4" /> },
+        'Menunggu': { 
+            bg: 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500',
+            glow: 'shadow-[0_0_40px_rgba(251,191,36,0.4)]',
+            text: 'text-white', 
+            icon: <Clock className="w-4 h-4" />,
+            emoji: '⏰',
+            particles: '🌟💫✨',
+            border: 'border-amber-400/30'
+        },
+        'Disetujui': { 
+            bg: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500',
+            glow: 'shadow-[0_0_40px_rgba(168,85,247,0.4)]',
+            text: 'text-white', 
+            icon: <CheckCircle2 className="w-4 h-4" />,
+            emoji: '🎊',
+            particles: '🎉🎊🥳',
+            border: 'border-purple-400/30'
+        },
+        'Ditolak': { 
+            bg: 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600',
+            glow: 'shadow-[0_0_40px_rgba(239,68,68,0.4)]',
+            text: 'text-white', 
+            icon: <XCircle className="w-4 h-4" />,
+            emoji: '😔',
+            particles: '💔😢🚫',
+            border: 'border-red-400/30'
+        },
+        'Selesai': { 
+            bg: 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600',
+            glow: 'shadow-[0_0_40px_rgba(16,185,129,0.4)]',
+            text: 'text-white', 
+            icon: <CheckCircle2 className="w-4 h-4" />,
+            emoji: '🎉',
+            particles: '🎉🏆✨',
+            border: 'border-emerald-400/30'
+        },
+        'Dibatalkan': { 
+            bg: 'bg-gradient-to-br from-slate-500 via-gray-600 to-zinc-700',
+            glow: 'shadow-[0_0_40px_rgba(100,116,139,0.4)]',
+            text: 'text-white', 
+            icon: <XCircle className="w-4 h-4" />,
+            emoji: '⛔',
+            particles: '🚫⚠️❌',
+            border: 'border-slate-400/30'
+        },
     };
 
     const currentStatus = statusConfig[pesanan.status];
@@ -102,123 +119,227 @@ const PemesananDetailModal = ({ pesanan, isOpen, onClose }: { pesanan: Pemesanan
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-                {/* Header dengan gradient */}
-                <div className={cn("relative overflow-hidden p-6 pb-8", currentStatus.bg)}>
-                    <DialogHeader className="relative z-10">
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                                <DialogTitle className="text-xl font-bold text-white mb-1 break-words leading-tight">
-                                    {pesanan.acara}
-                                </DialogTitle>
-                                <DialogDescription className="text-white/90 text-sm">
-                                    {displayDate} · {pesanan.waktu || '--:--'}
-                                </DialogDescription>
+            <DialogContent className="sm:max-w-[420px] max-h-[90vh] overflow-hidden p-0 gap-0 border-0 bg-transparent backdrop-blur-3xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
+                {/* Glassmorphism Container */}
+                <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl">
+                    
+                    {/* Animated Background Blobs */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className={cn("absolute -top-20 -right-20 w-60 h-60 rounded-full blur-3xl opacity-30 animate-pulse", currentStatus.bg)} />
+                        <div className={cn("absolute -bottom-20 -left-20 w-60 h-60 rounded-full blur-3xl opacity-20 animate-pulse delay-1000", currentStatus.bg)} />
+                    </div>
+
+                    {/* Hero Header dengan 3D Effect */}
+                    <div className={cn("relative overflow-hidden p-6 pb-20", currentStatus.bg, currentStatus.glow)}>
+                        {/* Animated Particles Background */}
+                        <div className="absolute inset-0 opacity-10">
+                            <div className="absolute top-2 left-4 text-2xl animate-bounce delay-100">{currentStatus.particles[0]}</div>
+                            <div className="absolute top-8 right-8 text-xl animate-bounce delay-300">{currentStatus.particles[1]}</div>
+                            <div className="absolute top-16 left-1/2 text-lg animate-bounce delay-500">{currentStatus.particles[2]}</div>
+                            <div className="absolute bottom-4 right-4 text-2xl animate-bounce delay-700">{currentStatus.particles[0]}</div>
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="flex items-start gap-3">
+                                {/* 3D Emoji Badge */}
+                                <div className="relative group">
+                                    <div className={cn("absolute inset-0 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-300", currentStatus.bg)} />
+                                    <div className="relative w-16 h-16 rounded-3xl bg-white/30 backdrop-blur-xl flex items-center justify-center text-4xl shadow-2xl ring-4 ring-white/40 transform hover:scale-110 hover:rotate-12 transition-all duration-300 cursor-pointer">
+                                        <span className="animate-bounce">{currentStatus.emoji}</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex-1 min-w-0 pt-2">
+                                    <DialogTitle className="text-base font-black text-white mb-2 break-words leading-tight drop-shadow-2xl tracking-tight">
+                                        {pesanan.acara}
+                                    </DialogTitle>
+                                    <div className="flex flex-wrap items-center gap-2 text-white/95 text-xs font-medium">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                                            <Calendar className="w-3.5 h-3.5" />
+                                            <span>{displayDate}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>{pesanan.waktu || '--:--'}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <Badge className={cn("flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30", currentStatus.text)}>
-                                {currentStatus.icon}
-                                <span className="font-semibold text-xs">{pesanan.status}</span>
-                            </Badge>
                         </div>
-                    </DialogHeader>
-                    {/* Decorative circles */}
-                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                    <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-                </div>
-
-                {/* Content area */}
-                <div className="p-5 space-y-4">
-                    {/* Info Grid - Compact */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <InfoCard icon={<MapPin className="w-4 h-4 text-blue-500" />} label="Lokasi" value={pesanan.lokasi} />
-                        <InfoCard icon={<Users className="w-4 h-4 text-green-500" />} label="Tamu" value={pesanan.tamu} />
-                        <InfoCard icon={<Building2 className="w-4 h-4 text-purple-500" />} label="Bagian" value={pesanan.untukBagian} />
-                        <InfoCard icon={<FileText className="w-4 h-4 text-orange-500" />} label="Approval" value={pesanan.approval} />
-                    </div>
-
-                    <Separator className="dark:bg-slate-700" />
-
-                    {/* Pengaju info */}
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/50">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                            {pesanan.yangMengajukan.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Diajukan oleh</p>
-                            <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{pesanan.yangMengajukan}</p>
+                        
+                        {/* Floating Status Badge dengan Glassmorphism */}
+                        <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+                            <div className={cn("px-5 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl ring-1", currentStatus.border, currentStatus.glow)}>
+                                <div className="flex items-center gap-2">
+                                    <div className={cn("p-1.5 rounded-lg", currentStatus.bg)}>
+                                        {currentStatus.icon}
+                                    </div>
+                                    <span className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-100 dark:to-white bg-clip-text text-transparent">
+                                        {pesanan.status}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Catatan if exists */}
-                    {pesanan.catatan && (
-                        <div className="flex gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50">
-                            <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                {/* Content - Scrollable dengan Glassmorphism */}
+                <div className="overflow-y-auto max-h-[calc(90vh-240px)] custom-scrollbar pt-12 pb-4">
+                    <div className="px-4 space-y-3">
+                    
+                    {/* Quick Info Grid dengan Neomorphism */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <GlassCard icon="📍" color="blue" label="Lokasi" value={pesanan.lokasi} />
+                        <GlassCard icon="👥" color="green" label="Tamu" value={pesanan.tamu} />
+                        <GlassCard icon="🏢" color="purple" label="Bagian" value={pesanan.untukBagian} />
+                        <GlassCard icon="✍️" color="orange" label="Approval" value={pesanan.approval} />
+                    </div>
+
+                    {/* Pengaju - Holographic Card */}
+                    <div className="group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-blue-500/90 via-indigo-600/90 to-purple-600/90 backdrop-blur-xl shadow-xl border border-white/20 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
+                        {/* Shine Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                        
+                        {/* Floating Emoji */}
+                        <div className="absolute top-2 right-2 text-5xl opacity-10 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">👤</div>
+                        
+                        <div className="relative flex items-center gap-3">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg" />
+                                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-sm flex items-center justify-center text-white font-black text-lg shadow-lg ring-2 ring-white/30 group-hover:ring-4 group-hover:scale-110 transition-all duration-300">
+                                    {pesanan.yangMengajukan.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-0.5">Catatan</p>
-                                <p className="text-sm text-amber-900 dark:text-amber-100 break-words leading-relaxed">{pesanan.catatan}</p>
+                                <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-0.5">Pengaju</p>
+                                <p className="text-white font-bold text-sm truncate drop-shadow-lg">{pesanan.yangMengajukan}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Catatan - Neon Glow Card */}
+                    {pesanan.catatan && (
+                        <div className="group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-amber-400/90 via-orange-500/90 to-rose-500/90 backdrop-blur-xl shadow-xl border border-white/20 hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-all duration-300">
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                            
+                            <div className="absolute top-2 right-2 text-5xl opacity-10">💭</div>
+                            
+                            <div className="relative flex gap-2.5">
+                                <div className="flex-shrink-0 text-2xl transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">📝</div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white/90 text-[10px] font-black uppercase tracking-wider mb-1">Catatan Penting</p>
+                                    <p className="text-white text-xs leading-relaxed drop-shadow">{pesanan.catatan}</p>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Konsumsi - Colorful Cards */}
-                    <div>
-                        <h4 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                            <span className="w-1 h-4 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
-                            Detail Konsumsi ({pesanan.konsumsi.length})
-                        </h4>
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                    {/* Konsumsi - Card Grid dengan Micro Animations */}
+                    <div className="relative">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="relative group/title">
+                                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl blur-md opacity-50 group-hover/title:opacity-75 transition-opacity" />
+                                <div className="relative px-3 py-1.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg">
+                                    <span className="text-white text-xl">🍱</span>
+                                </div>
+                            </div>
+                            <h4 className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                                Menu ({pesanan.konsumsi.length} item)
+                            </h4>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
                             {pesanan.konsumsi.map((item, index) => {
-                                const colors = [
-                                    'from-rose-500 to-pink-500',
-                                    'from-blue-500 to-cyan-500',
-                                    'from-green-500 to-emerald-500',
-                                    'from-purple-500 to-violet-500',
-                                    'from-orange-500 to-amber-500',
+                                const foodEmojis = ['🍕', '☕', '🍰', '🥤', '🍜', '🍱', '🥗', '🍔', '🌮', '🍣'];
+                                const gradients = [
+                                    'from-rose-500 to-pink-600',
+                                    'from-blue-500 to-cyan-600',
+                                    'from-green-500 to-emerald-600',
+                                    'from-purple-500 to-violet-600',
+                                    'from-orange-500 to-amber-600',
+                                    'from-teal-500 to-cyan-600',
+                                    'from-indigo-500 to-blue-600',
+                                    'from-fuchsia-500 to-pink-600',
                                 ];
-                                const colorClass = colors[index % colors.length];
+                                const gradient = gradients[index % gradients.length];
+                                const emoji = foodEmojis[index % foodEmojis.length];
                                 
                                 return (
-                                    <div key={index} className="group flex items-center gap-3 p-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:shadow-md hover:scale-[1.02] transition-all duration-200">
-                                        <div className={cn("w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-xs shadow-sm", colorClass)}>
-                                            {index + 1}
+                                    <div key={index} className="group relative overflow-hidden rounded-xl p-2.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-lg border-2 border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-xl hover:scale-[1.03] transition-all duration-300">
+                                        {/* Gradient Overlay on Hover */}
+                                        <div className={cn("absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-300", gradient)} />
+                                        
+                                        <div className="relative flex items-center gap-2.5">
+                                            <div className={cn("relative w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg text-base group-hover:scale-110 group-hover:rotate-12 transition-all duration-300", gradient)}>
+                                                <span className="relative z-10">{emoji}</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">{item.jenis}</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{item.satuan}</p>
+                                            </div>
+                                            <div className={cn("relative px-2.5 py-1 rounded-lg bg-gradient-to-r text-white font-black text-xs shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300", gradient)}>
+                                                <div className="absolute inset-0 bg-white/20 rounded-lg animate-pulse" />
+                                                <span className="relative">{item.qty}×</span>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm text-slate-800 dark:text-slate-100 truncate">{item.jenis}</p>
-                                        </div>
-                                        <Badge variant="secondary" className="font-semibold text-xs tabular-nums shrink-0">
-                                            {item.qty} {item.satuan}
-                                        </Badge>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
 
-                    {/* Timeline - Compact */}
+                    {/* Timeline - Futuristic Design */}
                     {pesanan.statusHistory && pesanan.statusHistory.length > 0 && (
-                        <div>
-                            <h4 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                                <span className="w-1 h-4 bg-gradient-to-b from-green-500 to-blue-500 rounded-full" />
-                                Riwayat Status
-                            </h4>
-                            <div className="space-y-2">
+                        <div className="relative">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="relative group/title">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl blur-md opacity-50 group-hover/title:opacity-75 transition-opacity" />
+                                    <div className="relative px-3 py-1.5 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 shadow-lg">
+                                        <span className="text-white text-xl">⏱️</span>
+                                    </div>
+                                </div>
+                                <h4 className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
+                                    Riwayat Status
+                                </h4>
+                            </div>
+                            
+                            <div className="relative pl-6 space-y-2">
+                                {/* Vertical Line with Gradient */}
+                                <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 opacity-30" />
+                                
                                 {pesanan.statusHistory.map((item, index) => {
-                                    const isLast = index === pesanan.statusHistory!.length - 1;
+                                    const statusEmojis: Record<string, string> = {
+                                        'Pesanan Dibuat': '📝',
+                                        'Pesanan Disetujui': '✅',
+                                        'Pesanan Ditolak': '❌',
+                                        'Pesanan Selesai': '🎉',
+                                        'Pesanan Dibatalkan': '🚫',
+                                    };
+                                    const emoji = statusEmojis[item.status] || '📌';
+                                    
                                     return (
-                                        <div key={index} className="flex gap-3 group">
-                                            <div className="flex flex-col items-center">
-                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                                    <div className="w-2 h-2 bg-white rounded-full" />
+                                        <div key={index} className="relative group/item">
+                                            {/* Timeline Node */}
+                                            <div className="absolute -left-6 top-0">
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full blur-md opacity-50 group-hover/item:opacity-100 transition-opacity" />
+                                                    <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-xl text-sm transform group-hover/item:scale-125 group-hover/item:rotate-12 transition-all duration-300">
+                                                        {emoji}
+                                                    </div>
                                                 </div>
-                                                {!isLast && <div className="w-0.5 h-full bg-gradient-to-b from-slate-300 to-transparent dark:from-slate-600 mt-1" />}
                                             </div>
-                                            <div className="flex-1 pb-3">
-                                                <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{item.status}</p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                    {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID', { 
-                                                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
-                                                    }) : '-'} · {item.oleh}
-                                                </p>
+                                            
+                                            {/* Content Card */}
+                                            <div className="relative overflow-hidden rounded-xl p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-lg border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-pink-500/0 group-hover/item:via-purple-500/10 transition-colors duration-300" />
+                                                
+                                                <div className="relative">
+                                                    <p className="font-black text-xs text-slate-800 dark:text-slate-100 mb-1">{item.status}</p>
+                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
+                                                        {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID', { 
+                                                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                                                        }) : '-'} • <span className="font-bold">{item.oleh}</span>
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -226,97 +347,80 @@ const PemesananDetailModal = ({ pesanan, isOpen, onClose }: { pesanan: Pemesanan
                             </div>
                         </div>
                     )}
+                    </div>
                 </div>
 
-                {/* Footer */}
-                <DialogFooter className="p-4 pt-2 border-t dark:border-slate-700">
+                {/* Footer - Holographic Button */}
+                <div className="relative p-4 border-t border-white/10 bg-gradient-to-r from-slate-50/50 to-white/50 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-xl">
                     <DialogClose asChild>
-                        <Button type="button" className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md">
-                            Tutup
+                        <Button type="button" className="group relative w-full h-12 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black text-sm shadow-2xl hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] transition-all duration-300 hover:scale-[1.02] border-2 border-white/20">
+                            {/* Shine Effect */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+                            
+                            <span className="relative flex items-center justify-center gap-2">
+                                <span className="text-xl animate-pulse">✨</span>
+                                <span className="drop-shadow-lg">Tutup</span>
+                                <span className="text-xl animate-pulse delay-150">✨</span>
+                            </span>
                         </Button>
                     </DialogClose>
-                </DialogFooter>
-
-                {/* Custom scrollbar styles */}
-                <style jsx>{`
-                    .custom-scrollbar::-webkit-scrollbar {
-                        width: 6px;
-                    }
-                    .custom-scrollbar::-webkit-scrollbar-track {
-                        background: transparent;
-                    }
-                    .custom-scrollbar::-webkit-scrollbar-thumb {
-                        background: #cbd5e1;
-                        border-radius: 3px;
-                    }
-                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                        background: #94a3b8;
-                    }
-                `}</style>
+                </div>
+                </div>
             </DialogContent>
         </Dialog>
     );
 };
 
-// Helper: Compact Info Card
-const InfoCard = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | undefined | null }) => (
-    <div className="flex gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition-shadow">
-        <div className="flex-shrink-0 mt-0.5">{icon}</div>
-        <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-medium">{label}</p>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" title={value || '-'}>{value || '-'}</p>
-        </div>
-    </div>
-);
-
-// --- Helper component Detail Item ---
-const DetailItem = ({ label, value, fullWidth = false, badgeStatus }: { label: string, value: string | undefined | null, fullWidth?: boolean, badgeStatus?: Pemesanan['status'] }) => {
-    const statusClasses = badgeStatus ? {
-        'Menunggu': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        'Disetujui': 'bg-purple-100 text-purple-800 border-purple-300',
-        'Ditolak': 'bg-red-100 text-red-800 border-red-300',
-        'Selesai': 'bg-green-100 text-green-800 border-green-300',
-        'Dibatalkan': 'bg-gray-100 text-gray-800 border-gray-300',
-    }[badgeStatus] : '';
-
+// GlassCard Component - Glassmorphism
+const GlassCard = ({ icon, color, label, value }: { icon: string, color: string, label: string, value: string | undefined | null }) => {
+    const colorMap = {
+        blue: 'from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30',
+        green: 'from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30',
+        purple: 'from-purple-500/20 to-fuchsia-500/20 hover:from-purple-500/30 hover:to-fuchsia-500/30',
+        orange: 'from-orange-500/20 to-rose-500/20 hover:from-orange-500/30 hover:to-rose-500/30',
+    };
+    
     return (
-        <div className={cn("text-sm", fullWidth && "col-span-2")}>
-            <strong className="block text-slate-500">{label}:</strong>
-            {badgeStatus ? (
-                <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium border", statusClasses)}>
-                    {value || "-"}
-                </span>
-            ) : (
-                <span className="text-gray-800 break-words">{value || "-"}</span>
-            )}
+        <div className={cn("group relative overflow-hidden rounded-2xl p-3 bg-gradient-to-br backdrop-blur-xl border border-white/20 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300", colorMap[color as keyof typeof colorMap])}>
+            {/* Shimmer Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            
+            {/* Background Emoji */}
+            <div className="absolute top-1 right-1 text-4xl opacity-5 group-hover:opacity-10 group-hover:scale-125 transition-all duration-500">{icon}</div>
+            
+            <div className="relative flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm flex items-center justify-center shadow-lg text-lg group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
+                    {icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-300 font-black leading-tight">{label}</p>
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate leading-tight mt-0.5 drop-shadow" title={value || '-'}>{value || '-'}</p>
+                </div>
+            </div>
         </div>
     );
 };
 
+// MiniCard removed (unused) — kept out to avoid lint warning; re-add if needed later.
+
 // --- KOMPONEN WIDGET & STATS ---
 
-// --- Komponen DateWidget dihapus ---
-
 const StatCard = ({ icon, title, value, iconBgClass }: { icon: React.ReactNode, title: string, value: number, iconBgClass: string }) => (
-    <Card className="hover:shadow-lg active:shadow-xl transition-shadow p-2.5 xs:p-3 sm:p-4 h-full dark:bg-slate-800/80 dark:border-slate-600">
+    <Card className="hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 p-2.5 xs:p-3 sm:p-4 h-full dark:bg-slate-800/80 dark:border-slate-600 cursor-pointer group">
         <div className="flex items-center justify-between gap-1.5 xs:gap-2">
             <div className="flex flex-col min-w-0 flex-1">
-                <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-300 mb-0.5 xs:mb-1 truncate leading-tight">{title}</p>
-                <p className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none">{value}</p>
+                <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-300 mb-0.5 xs:mb-1 truncate leading-tight group-hover:text-slate-700 dark:group-hover:text-slate-100 transition-colors">{title}</p>
+                <p className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none group-hover:scale-110 transition-transform duration-300 origin-left">{value}</p>
             </div>
-            <div className={cn("p-1.5 xs:p-2 sm:p-2.5 rounded-md xs:rounded-lg flex-shrink-0", iconBgClass)}>
+            <div className={cn("p-1.5 xs:p-2 sm:p-2.5 rounded-md xs:rounded-lg flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300", iconBgClass)}>
                 {icon}
             </div>
         </div>
     </Card>
 );
 
-// --- Komponen Skeleton ---
-const Skeleton = ({ className }: { className?: string }) => <div className={cn("animate-pulse rounded-md bg-slate-200", className)} />;
-
 // --- Tipe Props Dashboard ---
 interface PemesananDashboardProps {
-    isLoading: boolean;
     filteredAndSortedRiwayat: Pemesanan[];
     counts: Record<Pemesanan['status'] | 'Total', number>;
     actions: {
@@ -338,7 +442,6 @@ interface PemesananDashboardProps {
 
 // --- KOMPONEN UTAMA DASHBOARD ---
 const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
-    isLoading,
     filteredAndSortedRiwayat,
     counts,
     actions,
@@ -468,27 +571,7 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                             </div>
 
                             {/* Daftar atau Grid Pesanan */}
-                            {isLoading ? (
-                                // Skeleton Loading - Mobile-First
-                                <Tabs defaultValue="list" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-2 h-11 sm:h-10 mb-4">
-                                        <TabsTrigger value="list" className="flex items-center justify-center gap-2 text-sm sm:text-base">
-                                            <List className="w-4 h-4" />
-                                            <span>Daftar</span>
-                                        </TabsTrigger>
-                                        <TabsTrigger value="grid" className="flex items-center justify-center gap-2 text-sm sm:text-base">
-                                            <Grid className="w-4 h-4" />
-                                            <span>Grid</span>
-                                        </TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="list" className="space-y-3">
-                                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[100px] sm:h-[76px] w-full" />)}
-                                    </TabsContent>
-                                    <TabsContent value="grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[200px] sm:h-[150px] w-full" />)}
-                                    </TabsContent>
-                                </Tabs>
-                            ) : filteredAndSortedRiwayat.length === 0 ? (
+                                {filteredAndSortedRiwayat.length === 0 ? (
                                 // Pesan Kosong - Mobile-First
                                 <div className="text-center py-12 sm:py-16 px-4 text-slate-500">
                                     <FileText className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 opacity-50 dark:opacity-30" />
