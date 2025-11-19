@@ -15,13 +15,7 @@ export default defineConfig({
     // - Inline common testing deps to avoid Vite pre-bundling overhead
     // - Limit worker threads to a fraction of CPU by default (helps on Windows)
     // - Restrict test include pattern to src to avoid scanning unrelated files
-    deps: {
-      inline: [
-        '@testing-library/react',
-        '@testing-library/jest-dom',
-        'jsdom',
-      ],
-    },
+     // Removed deprecated inline dependencies
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
