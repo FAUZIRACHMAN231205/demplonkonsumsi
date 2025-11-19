@@ -54,8 +54,20 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300 ease-out;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.theme-transition {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition {
+    transition-duration: 0ms;
   }
 }
 

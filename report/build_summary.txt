@@ -1,0 +1,11 @@
+Build summary (local):
+
+- Command: npm run build
+- Result: Compiled successfully (Next.js production build)
+- Notes: Static pre-rendering done for pages; no build-time errors observed during local run.
+
+If you need the exact full build log, run:
+
+npm run build
+
+and copy the terminal output to this file.

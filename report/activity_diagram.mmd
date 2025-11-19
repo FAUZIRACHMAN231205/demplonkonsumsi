@@ -1,0 +1,20 @@
+%% Activity diagram untuk laporan sidang
+%% Format: Mermaid
+
+```mmd
+flowchart TD
+  U[User] --> |Buka halaman| Dashboard[Dashboard Pemesanan]
+  Dashboard --> |Klik 'Buat Pemesanan'| Form[Form Pemesanan]
+  Form --> |Submit| Backend[Local Storage / Adapter]
+  Backend --> |Simpan| Riwayat[Riwayat Pemesanan]
+  Dashboard --> |Klik item| Detail[Dialog Detail Pemesanan]
+  Dashboard --> |Filter/Sort/Search| Dashboard
+  Dashboard --> |Klik 'Setujui'|' Update[Update Status]
+  Dashboard --> |Klik 'Hapus'| Confirm[Modal Konfirmasi]
+  Confirm --> |Ya| Delete[Hapus dari Riwayat]
+  Dashboard --> |Klik 'Export'| Export[Generate CSV -> Download]
+
+  classDef userfill fill:#f9f,stroke:#333,stroke-width:1px;
+  class U userfill;
+```
+```

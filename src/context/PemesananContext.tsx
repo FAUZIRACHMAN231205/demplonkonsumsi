@@ -1,12 +1,9 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { usePemesanan } from '@/hooks/usePemesanan'; // Pastikan path ini benar
+import { usePemesanan, type UsePemesananReturn } from '@/hooks/usePemesanan';
+import type { StorageAdapter } from '@/lib/storage';
 
-// Tipe nilai yang akan disediakan oleh context
-// Ambil tipe return dari usePemesanan, tapi hapus 'showToast' dari 'actions'
-type UsePemesananReturnType = ReturnType<typeof usePemesanan>;
-type PemesananContextType = Omit<UsePemesananReturnType, 'actions'> & {
-  actions: Omit<UsePemesananReturnType['actions'], 'showToast'>; // Hapus showToast dari tipe actions
-};
+// Gunakan tipe yang diekspor dari hook untuk memastikan konsistensi tipe
+type PemesananContextType = UsePemesananReturn;
 
 
 // Buat Context dengan nilai awal undefined (atau nilai default jika perlu)
@@ -15,11 +12,13 @@ const PemesananContext = createContext<PemesananContextType | undefined>(undefin
 // Buat Provider Component
 interface PemesananProviderProps {
   children: ReactNode;
+  /** Optional storage adapter to override default localStorage-based adapter */
+  storageAdapter?: StorageAdapter;
 }
 
-export const PemesananProvider: React.FC<PemesananProviderProps> = ({ children }) => {
-  // Panggil hook usePemesanan di dalam Provider
-  const pemesananState = usePemesanan();
+export const PemesananProvider: React.FC<PemesananProviderProps> = ({ children, storageAdapter }) => {
+  // Panggil hook usePemesanan di dalam Provider dan injeksikan adapter bila diberikan
+  const pemesananState = usePemesanan(storageAdapter);
 
   // Sediakan state dan actions dari hook melalui Context Provider
   return (

@@ -86,7 +86,7 @@ const AdminDashboard = () => {
 
  return (
      <TooltipProvider>
-        <div className="bg-slate-50 dark:bg-slate-900 min-h-screen font-['Poppins',_sans-serif] transition-colors">
+        <div className="bg-slate-50 dark:bg-slate-900 min-h-screen transition-colors">
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
                     <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div>

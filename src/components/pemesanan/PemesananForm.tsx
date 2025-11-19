@@ -2,39 +2,49 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { formSchema, type Pemesanan } from "@/lib/schema";
+import {
+    APPROVAL_OPTIONS,
+    BAGIAN_OPTIONS,
+    DEFAULT_ACARA_OPTIONS,
+    LOKASI_OPTIONS,
+    SATUAN_OPTIONS,
+    TAMU_OPTIONS,
+    WAKTU_OPTIONS,
+} from "@/lib/constants/pemesanan";
 
-// --- DEFINISI SCHEMA LOKAL (MENGGANTIKAN IMPOR) ---
-// Schema untuk satu item konsumsi
-const konsumsiItemSchema = z.object({
-  jenis: z.string().min(1, { message: "Jenis konsumsi wajib diisi." }),
-  satuan: z.string().min(1, { message: "Satuan wajib diisi." }),
-  qty: z.string().min(1, { message: "Qty wajib diisi." }), // Menggunakan string karena default value ""
-});
+const confettiColors = ['#22c55e', '#0ea5e9', '#f97316', '#a855f7', '#facc15'];
 
-// Schema utama untuk keseluruhan form
-export const formSchema = z.object({
-  acara: z.string().min(1, { message: "Nama acara wajib diisi." }),
-  tanggalPermintaan: z.string().min(1, { message: "Tanggal permintaan wajib diisi." }),
-  tanggalPengiriman: z.string().min(1, { message: "Tanggal pengiriman wajib diisi." }),
-  waktu: z.string().min(1, { message: "Waktu wajib diisi." }),
-  lokasi: z.string().min(1, { message: "Lokasi wajib diisi." }),
-  tamu: z.string().min(1, { message: "Jenis tamu wajib diisi." }),
-  yangMengajukan: z.string(),
-  untukBagian: z.string().min(1, { message: "Bagian wajib diisi." }),
-  approval: z.string().min(1, { message: "Approval wajib diisi." }),
-  konsumsi: z.array(konsumsiItemSchema)
-    .min(1, { message: "Minimal harus ada 1 item konsumsi." }),
-  catatan: z.string().optional(),
-});
+const createConfettiPieces = () =>
+    Array.from({ length: 16 }).map((_, idx) => ({
+        id: idx,
+        left: Math.random() * 100,
+        delay: idx * 0.12,
+        duration: 2.2 + Math.random() * 1.2,
+        color: confettiColors[idx % confettiColors.length],
+    }));
 
-// Tipe Pemesanan (dulu diimpor)
-export type Pemesanan = z.infer<typeof formSchema>;
-// --- AKHIR DEFINISI SCHEMA LOKAL ---
+const INITIAL_FORM_VALUES: z.infer<typeof formSchema> = {
+    acara: "",
+    tanggalPermintaan: "",
+    tanggalPengiriman: "",
+    waktu: "",
+    lokasi: "",
+    tamu: "",
+    yangMengajukan: "Riza Ilhamsyah (12231149)",
+    untukBagian: "Dep. Teknologi Informasi PKC (C001370000)",
+    approval: "Jojok Satriadi (1140122)",
+    konsumsi: [{ jenis: "", satuan: "", qty: "" }],
+    catatan: "",
+};
 
 
 // --- IMPOR UI DAN IKON ---
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { 
     Card, 
     CardHeader, 
@@ -46,9 +56,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    CheckCircle2, ChevronDown, SearchIcon, Trash2, Plus, Info, AlertTriangle, Calendar, Users,
+    CheckCircle2, ChevronDown, SearchIcon, Trash2, Plus, Info, AlertTriangle, Users,
     // --- IKON BARU DITAMBAHKAN ---
-    CalendarDays, CalendarCheck, MapPin, Clock, User, Briefcase, UserCheck, Utensils, Box, Hash, FileText
+    CalendarDays, MapPin, Clock, User, Briefcase, UserCheck, Utensils, Box, Hash, FileText,
+    Sparkles, PartyPopper, RefreshCw, ArrowLeft
 } from 'lucide-react';
 
 // ==================================================================
@@ -190,16 +201,193 @@ const SearchableSelect = ({ options, value, onChange, placeholder = "Pilih opsi.
     );
 };
 
+const DAY_IN_MS = 86_400_000;
+
+const startOfDay = (date: Date) => {
+    const clone = new Date(date);
+    clone.setHours(0, 0, 0, 0);
+    return clone;
+};
+
+const addDays = (date: Date, amount: number) => {
+    const clone = new Date(date);
+    clone.setDate(clone.getDate() + amount);
+    return clone;
+};
+
+const formatDateToInput = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+};
+
+const parseInputDate = (value?: string) => {
+    if (!value) return undefined;
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return undefined;
+    const parsed = new Date(year, month - 1, day);
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+const isBeforeDay = (date: Date, minDate: Date) => {
+    return startOfDay(date).getTime() < startOfDay(minDate).getTime();
+};
+
+const formatFullDate = (date: Date) => {
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+};
+
+const getLeadTimeInfo = (date: Date) => {
+    const diff = Math.max(0, Math.round((startOfDay(date).getTime() - startOfDay(new Date()).getTime()) / DAY_IN_MS));
+    if (diff === 0) {
+        return {
+            badge: 'Hari ini',
+            text: 'Tim konsumsi siap bergerak cepat untuk pesanan kilat.',
+        };
+    }
+    if (diff === 1) {
+        return {
+            badge: 'H+1',
+            text: 'Masih ada satu hari untuk menyiapkan detail terbaik.',
+        };
+    }
+    return {
+        badge: `${diff} hari lagi`,
+        text: `Timeline aman, masih ada ${diff} hari untuk persiapan matang.`,
+    };
+};
+
+interface DatePickerFieldProps {
+    label: string;
+    placeholder: string;
+    description?: string;
+    value?: string;
+    onChange: (value: string) => void;
+    minDate?: Date;
+    quickPicks?: { label: string; date: Date }[];
+    error?: string;
+}
+
+const DatePickerField: React.FC<DatePickerFieldProps> = ({
+    label,
+    placeholder,
+    description = "Atur tanggal terbaikmu",
+    value,
+    onChange,
+    minDate,
+    quickPicks = [],
+    error,
+}) => {
+    const selectedDate = value ? parseInputDate(value) : undefined;
+    const friendlyDate = selectedDate ? formatFullDate(selectedDate) : placeholder;
+    const dayName = selectedDate?.toLocaleDateString('id-ID', { weekday: 'long' });
+    const leadTimeInfo = selectedDate ? getLeadTimeInfo(selectedDate) : undefined;
+
+    const handleSelect = (date?: Date) => {
+        if (!date) {
+            onChange("");
+            return;
+        }
+        onChange(formatDateToInput(startOfDay(date)));
+    };
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <Label className="text-sm text-slate-700 dark:text-slate-200">{label}</Label>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                        <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+                        {description}
+                    </p>
+                </div>
+                {leadTimeInfo && (
+                    <Badge variant="outline" className="border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-200">
+                        {leadTimeInfo.badge}
+                    </Badge>
+                )}
+            </div>
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70 p-3 shadow-sm space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-0.5">
+                        <p className="text-base font-semibold text-slate-900 dark:text-white">{friendlyDate}</p>
+                        {selectedDate && (
+                            <p className="text-xs text-slate-500 dark:text-slate-300">{`Mood ${dayName}`}</p>
+                        )}
+                        {leadTimeInfo && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                <span>{leadTimeInfo.text}</span>
+                            </div>
+                        )}
+                    </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="shrink-0 border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70"
+                            >
+                                <CalendarDays className="h-4 w-4 mr-2" />
+                                Buka Kalender
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <CalendarComponent
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={handleSelect}
+                                disabled={(date) => (minDate ? isBeforeDay(date, minDate) : false)}
+                                initialFocus
+                            />
+                            {quickPicks.length > 0 && (
+                                <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40 space-y-2">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Shortcut ceria</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {quickPicks.map((pick) => (
+                                            <Button
+                                                key={pick.label}
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
+                                                onClick={() => handleSelect(startOfDay(pick.date))}
+                                            >
+                                                {pick.label}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </PopoverContent>
+                    </Popover>
+                </div>
+                {dayName && (
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                            {dayName}
+                        </Badge>
+                    </div>
+                )}
+            </div>
+            {error && <p className="text-sm font-semibold text-red-500">{error}</p>}
+        </div>
+    );
+};
+
 // --- Form Step Component ---
 const FormStep = ({ children, step, currentStep }: { children: React.ReactNode, step: number, currentStep: number }) => {
-    // Render child if it's the current step
-    if (step !== currentStep) return null;
-    
+    const isActive = step === currentStep;
     return (
         <div
-            className="mb-8"
+            data-active={isActive}
+            className={cn(
+                "mb-8 transition-all duration-300",
+                isActive ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-2 h-0 overflow-hidden"
+            )}
         >
-            {children}
+            {isActive && children}
         </div>
     );
 };
@@ -229,31 +417,47 @@ const specialKonsumsiByWaktu: Record<string, {label: string, value: string}[]> =
     "Sahur": [ { label: "Menu Sahur Box", value: "Menu Sahur Box" }],
 };
 
+const specialKonsumsiByTamu: Record<string, {label: string, value: string}[]> = {
+    perta: [
+        { label: "Snack Box Energi", value: "Snack Box Energi" },
+        { label: "Kopi & Teh Premium", value: "Kopi & Teh Premium" },
+    ],
+    reguler: [
+        { label: "Gorengan Varian", value: "Gorengan Varian" },
+        { label: "Air Mineral Botol", value: "Air Mineral Botol" },
+    ],
+    standar: [
+        { label: "Snack Box Standar", value: "Snack Box Standar" },
+        { label: "Buah Potong", value: "Buah Potong" },
+    ],
+    vip: [
+        { label: "High Tea Set", value: "High Tea Set" },
+        { label: "Dessert Premium", value: "Dessert Premium" },
+    ],
+    vvip: [
+        { label: "Fine Dining Set", value: "Fine Dining Set" },
+        { label: "Canape Eksklusif", value: "Canape Eksklusif" },
+    ],
+};
+
 // Tipe Props
 interface PemesananFormProps {
-    riwayat: Pemesanan[]; // Gunakan tipe Pemesanan
-    onFormSubmit: (values: z.infer<typeof formSchema>) => boolean; // Sesuaikan tipe
-    onReturnToDashboard: () => void;
+    riwayat: Pemesanan[];
+    onFormSubmit: (values: z.infer<typeof formSchema>) => boolean;
+    onReturnToDashboard?: () => void;
+    onRequestClose?: () => void;
 }
 
-const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmit, onReturnToDashboard }) => {
+const STEP_LABELS = ["Isi Form", "Review", "Selesai"];
+
+const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmit, onReturnToDashboard, onRequestClose }) => {
     const [step, setStep] = useState(1);
+    const [showSuccessEffect, setShowSuccessEffect] = useState(false);
+    const [confettiPieces, setConfettiPieces] = useState(() => createConfettiPieces());
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            acara: "",
-            tanggalPermintaan: "",
-            tanggalPengiriman: "",
-            waktu: "",
-            lokasi: "",
-            tamu: "",
-            yangMengajukan: "Riza Ilhamsyah (12231149)",
-            untukBagian: "Dep. Teknologi Informasi PKC (C001370000)",
-            approval: "Jojok Satriadi (1140122)",
-            konsumsi: [{ jenis: "", satuan: "", qty: "" }],
-            catatan: "",
-        },
+        defaultValues: INITIAL_FORM_VALUES,
     });
 
     const { fields, append, remove } = useFieldArray({
@@ -262,15 +466,18 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
     });
     
     const waktuValue = form.watch("waktu");
+    const tamuValue = form.watch("tamu");
 
     const dynamicJenisKonsumsiOptions = useMemo(() => {
-        const specialOptions = specialKonsumsiByWaktu[waktuValue] || [];
-        const specialValues = new Set(specialOptions.map(opt => opt.value));
-        const filteredStandardOptions = standardKonsumsiOptions.filter(
-            opt => !specialValues.has(opt.value)
+        const waktuSpecific = specialKonsumsiByWaktu[waktuValue] || [];
+        const tamuSpecific = specialKonsumsiByTamu[tamuValue] || [];
+        const combinedSpecial = [...waktuSpecific, ...tamuSpecific].filter((option, index, array) =>
+            array.findIndex((item) => item.value === option.value) === index
         );
-        return [...specialOptions, ...filteredStandardOptions];
-    }, [waktuValue]);
+        const specialValues = new Set(combinedSpecial.map((opt) => opt.value));
+        const filteredStandardOptions = standardKonsumsiOptions.filter((opt) => !specialValues.has(opt.value));
+        return [...combinedSpecial, ...filteredStandardOptions];
+    }, [tamuValue, waktuValue]);
 
     useEffect(() => {
         const currentKonsumsi = form.getValues('konsumsi');
@@ -281,59 +488,16 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                 form.setValue(`konsumsi.${index}.jenis`, '', { shouldValidate: true });
             }
         });
-    }, [waktuValue, dynamicJenisKonsumsiOptions, form]);
+    }, [tamuValue, waktuValue, dynamicJenisKonsumsiOptions, form]);
 
 
     const uniqueAcaraOptions = useMemo(() => {
-        const defaultAcaraOptions = [ "Bahan Minum Karyawan", "Baporkes", "BK3N", "Extra fooding", "Extra Fooding Shift", "Extra Fooding SKJ", "Festival Inovasi", "Halal bil halal", "Rapat Koordinasi", "Pelatihan Internal", "Acara Departemen", "Lainnya" ];
-        const acaraNames = new Set([ ...defaultAcaraOptions, ...riwayat.map((r) => r.acara) ]);
-        return Array.from(acaraNames).map((name) => ({ label: name, value: name, }));
+        const acaraNames = new Set([
+            ...DEFAULT_ACARA_OPTIONS.map((option) => option.value),
+            ...riwayat.map((r) => r.acara),
+        ]);
+        return Array.from(acaraNames).map((name) => ({ label: name, value: name }));
     }, [riwayat]);
-    
-    const waktuOptions = [
-      { label: "Pagi", value: "Pagi" },
-      { label: "Siang", value: "Siang" },
-      { label: "Sore", value: "Sore" },
-      { label: "Malam", value: "Malam" },
-      { label: "Sahur", value: "Sahur" },
-      { label: "Buka Puasa", value: "Buka Puasa" },
-    ];
-
-    const lokasiOptions = [
-        { label: "Gedung Utama, Ruang Rapat Cempaka", value: "Gedung Utama, Ruang Rapat Cempaka" },
-        { label: "Gedung Produksi, Area Istirahat", value: "Gedung Produksi, Area Istirahat" },
-        { label: "Wisma Kujang, Aula Serbaguna", value: "Wisma Kujang, Aula Serbaguna" },
-        { label: "Gedung Training Center, Ruang 1", value: "Gedung Training Center, Ruang 1" },
-        { label: "Kantor Departemen TI", value: "Kantor Departemen TI" },
-    ];
-
-    const tamuOptions = [
-        { label: "Perta", value: "perta" },
-        { label: "Reguler", value: "reguler" },
-        { label: "Standar", value: "standar" },
-        { label: "VIP", value: "vip" },
-        { label: "VVIP", value: "vvip" },
-    ];
-
-    const bagianOptions = [
-        { label: "Dep. Teknologi Informasi PKC (C001370000)", value: "Dep. Teknologi Informasi PKC (C001370000)" },
-        { label: "Dep. Keuangan (C001380000)", value: "Dep. Keuangan (C001380000)" },
-        { label: "Dep. SDM (C001390000)", value: "Dep. SDM (C001390000)" },
-    ];
-
-    const approvalOptions = [
-        { label: "Jojok Satriadi (1140122)", value: "Jojok Satriadi (1140122)" },
-        { label: "Budi Santoso (1120321)", value: "Budi Santoso (1120321)" },
-        { label: "Citra Lestari (1150489)", value: "Citra Lestari (1150489)" },
-    ];
-
-    const satuanOptions = [
-        { label: "Box", value: "Box" },
-        { label: "Porsi", value: "Porsi" },
-        { label: "Paket", value: "Paket" },
-        { label: "Kg", value: "Kg" },
-        { label: "Cup", value: "Cup" },
-    ];
 
     const handleNextStep = () => setStep((prev) => prev + 1);
     const handlePrevStep = () => setStep((prev) => prev - 1);
@@ -354,11 +518,58 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
 
     const acaraValue = form.watch("acara");
     const lokasiValue = form.watch("lokasi");
-    const tamuValue = form.watch("tamu");
     const bagianValue = form.watch("untukBagian");
     const approvalValue = form.watch("approval");
+    const tanggalPermintaanValue = form.watch("tanggalPermintaan");
+
+    const today = useMemo(() => startOfDay(new Date()), []);
+    const permintaanDateObj = useMemo(() => parseInputDate(tanggalPermintaanValue), [tanggalPermintaanValue]);
+    const permintaanQuickPicks = useMemo(() => ([
+        { label: "Hari ini", date: today },
+        { label: "Besok", date: addDays(today, 1) },
+        { label: "3 hari lagi", date: addDays(today, 3) },
+    ]), [today]);
+    const pengirimanQuickPicks = useMemo(() => {
+        const base = permintaanDateObj || today;
+        return [1, 2, 3].map((offset) => ({ label: `H+${offset}`, date: addDays(base, offset) }));
+    }, [permintaanDateObj, today]);
+    const pengirimanMinDate = permintaanDateObj || today;
 
     const values = form.getValues();
+    const formatTanggal = (tanggal?: string) => {
+        if (!tanggal) return "-";
+        const parsed = new Date(tanggal);
+        if (Number.isNaN(parsed.getTime())) return tanggal;
+        return parsed.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+    const successHighlights = [
+        { label: 'Acara', value: values.acara || '-' },
+        { label: 'Tanggal Pengiriman', value: formatTanggal(values.tanggalPengiriman) },
+        { label: 'Lokasi', value: values.lokasi || '-' },
+        { label: 'Total Menu', value: `${values?.konsumsi?.length ?? 0} item` },
+    ];
+
+    useEffect(() => {
+        if (step === 3) {
+            setConfettiPieces(createConfettiPieces());
+            setShowSuccessEffect(true);
+            const timeout = setTimeout(() => setShowSuccessEffect(false), 3200);
+            return () => clearTimeout(timeout);
+        }
+    }, [step]);
+
+    const requestClose = () => {
+        if (onRequestClose) {
+            onRequestClose();
+            return;
+        }
+        onReturnToDashboard?.();
+    };
+
+    const handleCreateAnother = () => {
+        form.reset(INITIAL_FORM_VALUES);
+        setStep(1);
+    };
     const labels: Record<string, string> = {
         acara: "Nama Acara",
         tanggalPermintaan: "Tanggal Permintaan",
@@ -374,12 +585,63 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-4 md:p-8 font-['Poppins',_sans-serif]">
+        <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 p-4 pb-28 md:p-8 md:pb-12">
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+                @keyframes confettiFall {
+                    0% { transform: translateY(-20%) rotate(0deg); opacity: 0; }
+                    10% { opacity: 1; }
+                    100% { transform: translateY(120vh) rotate(360deg); opacity: 0; }
+                }
+                @keyframes smoothPop {
+                    0% { transform: scale(0.6); opacity: 0; }
+                    80% { transform: scale(1.05); opacity: 1; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes fadeUp {
+                    0% { transform: translateY(16px); opacity: 0; }
+                    100% { transform: translateY(0); opacity: 1; }
+                }
+                .confetti-piece {
+                    position: absolute;
+                    top: -20px;
+                    width: 0.55rem;
+                    height: 0.55rem;
+                    border-radius: 9999px;
+                    opacity: 0;
+                    animation-name: confettiFall;
+                    animation-timing-function: ease-in;
+                }
+                .animate-smooth-pop {
+                    animation: smoothPop 0.6s ease-out forwards;
+                }
+                .animate-fade-up {
+                    animation: fadeUp 0.45s ease-out forwards;
+                    opacity: 0;
+                }
             `}</style>
             
             <div className="max-w-4xl mx-auto">
+                <div className="sm:hidden sticky top-0 z-30 -mx-4 mb-6 rounded-b-2xl border-b border-slate-200/70 dark:border-slate-800/70 bg-white/95 dark:bg-slate-900/90 backdrop-blur px-4 py-3 shadow-sm">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-300">
+                        <span>Langkah {step}/{STEP_LABELS.length}</span>
+                        {step > 1 && step < STEP_LABELS.length && (
+                            <button
+                                type="button"
+                                onClick={handlePrevStep}
+                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400"
+                            >
+                                <ArrowLeft className="h-3.5 w-3.5" /> Kembali
+                            </button>
+                        )}
+                    </div>
+                    <p className="mt-1 text-base font-semibold text-slate-800 dark:text-slate-100">{STEP_LABELS[step - 1]}</p>
+                    <div className="mt-3 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        <div
+                            className="h-full bg-blue-500 transition-all duration-500"
+                            style={{ width: `${((step - 1) / (STEP_LABELS.length - 1 || 1)) * 100}%` }}
+                        />
+                    </div>
+                </div>
                 {step === 1 && (
                     <div
                         className="grid md:grid-cols-2 gap-4 mb-8"
@@ -404,30 +666,38 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
 
 
                 {/* Stepper UI */}
-                <div className="w-full max-w-lg mx-auto flex justify-center items-start gap-2 md:gap-4 mb-12">
-                    {["Isi Form", "Review", "Selesai"].map((label, index) => (
-                        <React.Fragment key={index}>
-                            <div className="flex flex-col items-center gap-2">
-                                <div
-                                    className={`w-10 h-10 flex items-center justify-center rounded-full font-bold ${ step > index + 1 ? "bg-green-500 text-white" : step === index + 1 ? "bg-blue-500 text-white" : "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300"}`} 
-                                >
-                                    {step > index + 1 ? (
-                                        <div>
-                                            <CheckCircle2 className="h-5 w-5" />
-                                        </div>
-                                    ) : (
-                                        index + 1
-                                    )}
+                <div className="mb-6 sm:mb-10">
+                    {/* Desktop stepper */}
+                    <div className="hidden sm:flex w-full max-w-2xl mx-auto justify-center items-start gap-4">
+                        {STEP_LABELS.map((label, index) => (
+                            <React.Fragment key={label}>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div
+                                        className={cn(
+                                            "w-11 h-11 flex items-center justify-center rounded-full font-semibold text-base",
+                                            step > index + 1 && "bg-green-500 text-white",
+                                            step === index + 1 && "bg-blue-500 text-white",
+                                            step < index + 1 && "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300"
+                                        )}
+                                    >
+                                        {step > index + 1 ? <CheckCircle2 className="h-5 w-5" /> : index + 1}
+                                    </div>
+                                    <p className={cn(
+                                        "text-sm font-semibold text-center",
+                                        step >= index + 1 ? "text-gray-800 dark:text-slate-200" : "text-gray-400 dark:text-slate-500"
+                                    )}>
+                                        {label}
+                                    </p>
                                 </div>
-                                <p className={`text-xs font-semibold ${step >= index + 1 ? "text-gray-800 dark:text-slate-200" : "text-gray-400 dark:text-slate-500"}`}>
-                                    {label}
-                                </p>
-                            </div>
-                            {index < 2 && (
-                                <div className={`flex-1 h-1 rounded-full mt-5 ${step > index + 1 ? "bg-green-500" : "bg-gray-200 dark:bg-slate-600"}`} />
-                            )}
-                        </React.Fragment>
-                    ))}
+                                {index < STEP_LABELS.length - 1 && (
+                                    <div className={cn(
+                                        "flex-1 h-1 rounded-full mt-5 transition-colors",
+                                        step > index + 1 ? "bg-green-500" : "bg-gray-200 dark:bg-slate-600"
+                                    )} />
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Step 1 */}
@@ -455,28 +725,38 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tanggalPermintaan">Tanggal Permintaan</Label>
-                                            {/* --- TAMBAH IKON (WRAPPER) --- */}
-                                            <div className="relative">
-                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-                                                <Input id="tanggalPermintaan" type="date" {...form.register("tanggalPermintaan")} className="pl-10 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                                            </div>
-                                            {form.formState.errors.tanggalPermintaan && (
-                                                <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPermintaan.message}</p>
+                                        <Controller
+                                            control={form.control}
+                                            name="tanggalPermintaan"
+                                            render={({ field }) => (
+                                                <DatePickerField
+                                                    label="Tanggal Permintaan"
+                                                    placeholder="Pilih tanggal permintaan"
+                                                    description="Pastikan minimal H-1 ya"
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    minDate={today}
+                                                    quickPicks={permintaanQuickPicks}
+                                                    error={form.formState.errors.tanggalPermintaan?.message}
+                                                />
                                             )}
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tanggalPengiriman">Tanggal Pengiriman</Label>
-                                            {/* --- TAMBAH IKON (WRAPPER) --- */}
-                                            <div className="relative">
-                                                <CalendarCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-                                                <Input id="tanggalPengiriman" type="date" {...form.register("tanggalPengiriman")} className="pl-10 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-white" />
-                                            </div>
-                                            {form.formState.errors.tanggalPengiriman && (
-                                                <p className="text-sm font-medium text-red-500">{form.formState.errors.tanggalPengiriman.message}</p>
+                                        />
+                                        <Controller
+                                            control={form.control}
+                                            name="tanggalPengiriman"
+                                            render={({ field }) => (
+                                                <DatePickerField
+                                                    label="Tanggal Pengiriman"
+                                                    placeholder="Pilih tanggal pengiriman"
+                                                    description="Cari slot kirim yang paling pas"
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    minDate={pengirimanMinDate}
+                                                    quickPicks={pengirimanQuickPicks}
+                                                    error={form.formState.errors.tanggalPengiriman?.message}
+                                                />
                                             )}
-                                        </div>
+                                        />
                                     </div>
                                     
                                     <div className="space-y-2">
@@ -485,7 +765,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         <SearchableSelect
                                             icon={<MapPin className="h-4 w-4" />}
                                             placeholder="Pilih lokasi"
-                                            options={lokasiOptions}
+                                            options={LOKASI_OPTIONS}
                                             value={lokasiValue}
                                             onChange={(val) => form.setValue("lokasi", val, { shouldValidate: true })}
                                         />
@@ -501,7 +781,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                             <SearchableSelect
                                                 icon={<Clock className="h-4 w-4" />}
                                                 placeholder="Pilih waktu"
-                                                options={waktuOptions}
+                                                options={WAKTU_OPTIONS}
                                                 value={waktuValue}
                                                 onChange={(val) => form.setValue("waktu", val, { shouldValidate: true })}
                                             />
@@ -515,7 +795,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                             <SearchableSelect
                                                 icon={<Users className="h-4 w-4" />}
                                                 placeholder="Pilih jenis tamu"
-                                                options={tamuOptions}
+                                                options={TAMU_OPTIONS}
                                                 value={tamuValue}
                                                 onChange={(val) => form.setValue("tamu", val, { shouldValidate: true })}
                                             />
@@ -533,8 +813,9 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                             <Input
                                                 id="yangMengajukan"
                                                 {...form.register("yangMengajukan")}
-                                                disabled
-                                                className="bg-slate-100 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 pl-10" // shadcn/ui style
+                                                readOnly
+                                                aria-readonly="true"
+                                                className="pl-10 bg-white dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 cursor-text focus-visible:ring-0" // tetap non-edit tapi visual aktif
                                             />
                                         </div>
                                         {form.formState.errors.yangMengajukan && (
@@ -548,7 +829,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         <SearchableSelect
                                             icon={<Briefcase className="h-4 w-4" />}
                                             placeholder="Pilih bagian"
-                                            options={bagianOptions}
+                                            options={BAGIAN_OPTIONS}
                                             value={bagianValue}
                                             onChange={(val) => form.setValue("untukBagian", val, { shouldValidate: true })}
                                         />
@@ -563,7 +844,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                         <SearchableSelect
                                             icon={<UserCheck className="h-4 w-4" />}
                                             placeholder="Pilih approval"
-                                            options={approvalOptions}
+                                            options={APPROVAL_OPTIONS}
                                             value={approvalValue}
                                             onChange={(val) => form.setValue("approval", val, { shouldValidate: true })}
                                         />
@@ -615,7 +896,7 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                                                 <SearchableSelect
                                                                     icon={<Box className="h-4 w-4" />}
                                                                     placeholder="Satuan"
-                                                                    options={satuanOptions}
+                                                                    options={SATUAN_OPTIONS}
                                                                     value={field.value}
                                                                     onChange={field.onChange}
                                                                 />
@@ -668,11 +949,17 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                     </div>
                                 </form>
                             </CardContent>
-                            <CardFooter className="flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
-                                <Button variant="outline" onClick={onReturnToDashboard} className="shadow-sm hover:shadow-md transition-all active:scale-95">Batal</Button>
+                            <CardFooter className="hidden sm:flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
+                                <Button variant="outline" onClick={requestClose} className="shadow-sm hover:shadow-md transition-all active:scale-95">Batal</Button>
                                 <Button onClick={form.handleSubmit(handleNextStep)} className="shadow-md hover:shadow-lg transition-all active:scale-95">Lanjut ke Review</Button>
                             </CardFooter>
                         </Card>
+                        <div className="sm:hidden sticky bottom-0 left-0 right-0 z-30 -mx-4 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-4 shadow-xl space-y-3">
+                                <Button variant="outline" onClick={requestClose} className="w-full">Batal</Button>
+                                <Button onClick={form.handleSubmit(handleNextStep)} className="w-full">Lanjut ke Review</Button>
+                            </div>
+                        </div>
                     </FormStep>
 
                     {/* Step 2 */}
@@ -710,37 +997,84 @@ const PemesananForm: React.FC<PemesananFormProps> = ({ riwayat = [], onFormSubmi
                                     );
                                 })}
                             </CardContent>
-                            <CardFooter className="flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
+                            <CardFooter className="hidden sm:flex justify-between bg-slate-50/70 dark:bg-slate-800/70 p-6">
                                 <Button variant="outline" onClick={handlePrevStep} className="shadow-sm hover:shadow-md transition-all active:scale-95">Kembali</Button>
                                 <Button onClick={form.handleSubmit(handleFinalSubmit)} className="shadow-md hover:shadow-lg transition-all active:scale-95">Kirim Pesanan</Button>
                             </CardFooter>
                         </Card>
+                        <div className="sm:hidden sticky bottom-0 left-0 right-0 z-30 -mx-4 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-4 shadow-xl space-y-3">
+                                <Button variant="outline" onClick={handlePrevStep} className="w-full">Kembali</Button>
+                                <Button onClick={form.handleSubmit(handleFinalSubmit)} className="w-full">Kirim Pesanan</Button>
+                            </div>
+                        </div>
                     </FormStep>
 
                     {/* Step 3 */}
                     <FormStep key="step3" step={3} currentStep={step}>
-                        <div
-                            className="text-center bg-white dark:bg-slate-800 p-8 md:p-12 rounded-lg shadow-xl border border-gray-200 dark:border-slate-600"
-                        >
-                            <div
-                                className="text-green-500 w-16 h-16 mx-auto mb-4 flex items-center justify-center bg-green-100 dark:bg-green-900/30 rounded-full"
-                            >
-                                <CheckCircle2 className="h-8 w-8" />
-                            </div>
-                            <h2
-                                className="text-2xl font-bold text-gray-800 dark:text-slate-100"
-                            >
-                                Pemesanan Berhasil!
-                            </h2>
-                            <p
-                                className="text-gray-600 dark:text-slate-400 mt-2"
-                            >
-                                Pesanan Anda telah ditambahkan ke riwayat.
-                            </p>
-                            <div>
-                                <Button onClick={onReturnToDashboard} className="mt-6 shadow-md hover:shadow-lg active:scale-95">
-                                    Kembali ke Dasbor
-                                </Button>
+                        <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl p-6 md:p-10">
+                            {showSuccessEffect && (
+                                <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                                    {confettiPieces.map((piece) => (
+                                        <span
+                                            key={`confetti-${piece.id}-${piece.left}`}
+                                            className="confetti-piece"
+                                            style={{
+                                                left: `${piece.left}%`,
+                                                animationDelay: `${piece.delay}s`,
+                                                animationDuration: `${piece.duration}s`,
+                                                backgroundColor: piece.color,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                            <div className="relative text-center">
+                                <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-inner animate-smooth-pop">
+                                    <CheckCircle2 className="h-12 w-12" />
+                                </div>
+                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                                    Pemesanan Berhasil!
+                                </h2>
+                                <p className="mt-3 text-base text-slate-600 dark:text-slate-300 flex items-center justify-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                                    Pesanan {values.acara ? `"${values.acara}"` : 'Anda'} telah ditambahkan ke riwayat dan siap diproses.
+                                </p>
+
+                                <div className="mt-8 grid gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
+                                    {successHighlights.map((item, index) => (
+                                        <div
+                                            key={item.label}
+                                            className="rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40 p-4 animate-fade-up"
+                                            style={{ animationDelay: `${index * 0.1}s` }}
+                                        >
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                                {item.label}
+                                            </p>
+                                            <p className="mt-1 text-lg font-semibold text-slate-800 dark:text-slate-100">
+                                                {item.value}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
+                                    <Button onClick={requestClose} className="h-12 px-8 shadow-lg hover:shadow-xl active:scale-95">
+                                        Kembali ke Dasbor
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleCreateAnother}
+                                        className="h-12 px-8 border-2 gap-2 text-slate-700 dark:text-slate-200"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                        Buat Pesanan Baru
+                                    </Button>
+                                </div>
+                                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                                    <PartyPopper className="h-4 w-4 text-emerald-500" />
+                                    Riwayat dapat Anda pantau di Dasbor dan status bisa diperbarui kapan saja.
+                                </p>
                             </div>
                         </div>
                     </FormStep>

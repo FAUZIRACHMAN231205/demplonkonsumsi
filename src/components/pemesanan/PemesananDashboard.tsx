@@ -1,407 +1,256 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    Calendar,
+    CheckCircle2,
+    ChevronDown,
+    Clock,
+    Download,
+    Eye,
+    FileText,
+    Grid,
+    List,
+    MapPin,
+    MoreVertical,
+    PlusCircle,
+    SlidersHorizontal,
+    Trash2,
+    XCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Pemesanan } from '@/lib/schema';
-
-// --- UTILITY: Class Name Merger ---
 import { cn } from '@/lib/utils';
 
-// --- UI COMPONENTS ---
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { TooltipProvider } from "@/components/ui/tooltip"; // Provider saja yang dipakai
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger,
-    DropdownMenuSeparator 
-} from "@/components/ui/dropdown-menu";
+const STATUS_FILTER_OPTIONS: Array<Pemesanan['status'] | 'Semua'> = ['Semua', 'Menunggu', 'Disetujui', 'Ditolak', 'Selesai', 'Dibatalkan'];
 
-// --- Ikon BANTUAN ---
-import {
-    PlusCircle, Clock, CheckCircle2, XCircle, List, Grid, Calendar, Download, FileText, MapPin, Eye, Trash2, MoreVertical
-} from 'lucide-react';
-
-// --- HELPER: Calculate Status Progress ---
-const getStatusProgress = (status: Pemesanan['status']): number => {
-    const progressMap: Record<Pemesanan['status'], number> = {
-        'Menunggu': 25,
-        'Disetujui': 50,
-        'Ditolak': 100,
-        'Selesai': 100,
-        'Dibatalkan': 100,
-    };
-    return progressMap[status] || 0;
+const STATUS_PROGRESS: Record<Pemesanan['status'], number> = {
+    Menunggu: 25,
+    Disetujui: 75,
+    Ditolak: 0,
+    Selesai: 100,
+    Dibatalkan: 0,
 };
 
-const getStatusColor = (status: Pemesanan['status']): string => {
-    const colorMap: Record<Pemesanan['status'], string> = {
-        'Menunggu': 'bg-yellow-500',
-        'Disetujui': 'bg-purple-500',
-        'Ditolak': 'bg-red-500',
-        'Selesai': 'bg-green-500',
-        'Dibatalkan': 'bg-gray-500',
-    };
-    return colorMap[status] || 'bg-gray-500';
+const STATUS_CONFIG: Record<Pemesanan['status'], {
+    list: string;
+    grid: string;
+    icon: React.ReactNode;
+    bg: string;
+    glow: string;
+    border: string;
+    particles: string[];
+    emoji: string;
+}> = {
+    Menunggu: {
+        list: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+        grid: 'ring-1 ring-yellow-200 dark:ring-yellow-500/40',
+        icon: <Clock className="w-3 h-3" />,
+        bg: 'bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-yellow-400/20',
+        glow: 'shadow-[0_10px_40px_rgba(251,191,36,0.35)]',
+        border: 'border-amber-200/60 dark:border-amber-500/40',
+        particles: ['⏳', '✨', '🕒'],
+        emoji: '⏳',
+    },
+    Disetujui: {
+        list: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+        grid: 'ring-1 ring-purple-200 dark:ring-purple-500/40',
+        icon: <CheckCircle2 className="w-3 h-3" />,
+        bg: 'bg-gradient-to-br from-purple-500/30 via-indigo-500/20 to-fuchsia-500/20',
+        glow: 'shadow-[0_10px_40px_rgba(167,139,250,0.35)]',
+        border: 'border-purple-200/60 dark:border-purple-500/40',
+        particles: ['🎉', '✨', '💜'],
+        emoji: '🎉',
+    },
+    Ditolak: {
+        list: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+        grid: 'ring-1 ring-red-200 dark:ring-red-500/40',
+        icon: <XCircle className="w-3 h-3" />,
+        bg: 'bg-gradient-to-br from-rose-500/30 via-red-500/20 to-pink-500/20',
+        glow: 'shadow-[0_10px_40px_rgba(248,113,113,0.35)]',
+        border: 'border-rose-200/60 dark:border-rose-500/40',
+        particles: ['⚠️', '💥', '❌'],
+        emoji: '⚠️',
+    },
+    Selesai: {
+        list: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+        grid: 'ring-1 ring-green-200 dark:ring-green-500/40',
+        icon: <CheckCircle2 className="w-3 h-3" />,
+        bg: 'bg-gradient-to-br from-emerald-500/30 via-green-500/20 to-teal-500/20',
+        glow: 'shadow-[0_10px_40px_rgba(34,197,94,0.35)]',
+        border: 'border-emerald-200/60 dark:border-emerald-500/40',
+        particles: ['🌿', '🌟', '✅'],
+        emoji: '✅',
+    },
+    Dibatalkan: {
+        list: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
+        grid: 'ring-1 ring-slate-200 dark:ring-slate-600/40',
+        icon: <XCircle className="w-3 h-3" />,
+        bg: 'bg-gradient-to-br from-slate-500/20 via-slate-600/20 to-slate-700/20',
+        glow: 'shadow-[0_10px_40px_rgba(71,85,105,0.35)]',
+        border: 'border-slate-200/60 dark:border-slate-600/40',
+        particles: ['💤', '🌫️', '🌀'],
+        emoji: '🌀',
+    },
 };
 
-// Custom Progress Bar with dynamic color
-const StatusProgressBar = ({ status }: { status: Pemesanan['status'] }) => {
-    const progress = getStatusProgress(status);
-    const colorClass = getStatusColor(status);
-    
-    return (
-        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-            <div 
-                className={cn("h-full rounded-full transition-all duration-300", colorClass)}
-                style={{ width: `${progress}%` }}
-            />
-        </div>
-    );
+const STATUS_PROGRESS_COLOR: Record<Pemesanan['status'], string> = {
+    Menunggu: 'from-amber-400 to-orange-500',
+    Disetujui: 'from-purple-500 to-indigo-500',
+    Ditolak: 'from-rose-500 to-red-500',
+    Selesai: 'from-emerald-500 to-green-500',
+    Dibatalkan: 'from-slate-500 to-slate-700',
 };
 
-// --- Komponen Modal Detail ---
-import { Dialog, DialogContent, DialogTitle, DialogClose } from '@/components/ui/dialog';
+const getStatusProgress = (status: Pemesanan['status']) => STATUS_PROGRESS[status] ?? 0;
 
-const PemesananDetailModal = ({ pesanan, isOpen, onClose }: { pesanan: Pemesanan | null, isOpen: boolean, onClose: () => void }) => {
+const StatusProgressBar = ({ status }: { status: Pemesanan['status'] }) => (
+    <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-700/60 overflow-hidden">
+        <div
+            className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-300', STATUS_PROGRESS_COLOR[status])}
+            style={{ width: `${getStatusProgress(status)}%` }}
+        />
+    </div>
+);
+
+interface PemesananDetailModalProps {
+    pesanan: Pemesanan | null;
+    isOpen: boolean;
+    onClose: () => void;
+}
+
+const PemesananDetailModal: React.FC<PemesananDetailModalProps> = ({ pesanan, isOpen, onClose }) => {
     if (!pesanan) return null;
 
-    const statusConfig = {
-        'Menunggu': { 
-            bg: 'bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500',
-            glow: 'shadow-[0_0_40px_rgba(251,191,36,0.4)]',
-            text: 'text-white', 
-            icon: <Clock className="w-4 h-4" />,
-            emoji: '⏰',
-            particles: '🌟💫✨',
-            border: 'border-amber-400/30'
-        },
-        'Disetujui': { 
-            bg: 'bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-500',
-            glow: 'shadow-[0_0_40px_rgba(168,85,247,0.4)]',
-            text: 'text-white', 
-            icon: <CheckCircle2 className="w-4 h-4" />,
-            emoji: '🎊',
-            particles: '🎉🎊🥳',
-            border: 'border-purple-400/30'
-        },
-        'Ditolak': { 
-            bg: 'bg-gradient-to-br from-red-500 via-rose-500 to-pink-600',
-            glow: 'shadow-[0_0_40px_rgba(239,68,68,0.4)]',
-            text: 'text-white', 
-            icon: <XCircle className="w-4 h-4" />,
-            emoji: '😔',
-            particles: '💔😢🚫',
-            border: 'border-red-400/30'
-        },
-        'Selesai': { 
-            bg: 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600',
-            glow: 'shadow-[0_0_40px_rgba(16,185,129,0.4)]',
-            text: 'text-white', 
-            icon: <CheckCircle2 className="w-4 h-4" />,
-            emoji: '🎉',
-            particles: '🎉🏆✨',
-            border: 'border-emerald-400/30'
-        },
-        'Dibatalkan': { 
-            bg: 'bg-gradient-to-br from-slate-500 via-gray-600 to-zinc-700',
-            glow: 'shadow-[0_0_40px_rgba(100,116,139,0.4)]',
-            text: 'text-white', 
-            icon: <XCircle className="w-4 h-4" />,
-            emoji: '⛔',
-            particles: '🚫⚠️❌',
-            border: 'border-slate-400/30'
-        },
-    };
-
-    const currentStatus = statusConfig[pesanan.status];
+    const currentStatus = STATUS_CONFIG[pesanan.status];
     const displayDate = pesanan.tanggalPengiriman ? new Date(pesanan.tanggalPengiriman).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[420px] max-h-[90vh] overflow-hidden p-0 gap-0 border-0 bg-transparent backdrop-blur-3xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
-                {/* Glassmorphism Container */}
-                <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl">
-                    
-                    {/* Animated Background Blobs */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className={cn("absolute -top-20 -right-20 w-60 h-60 rounded-full blur-3xl opacity-30 animate-pulse", currentStatus.bg)} />
-                        <div className={cn("absolute -bottom-20 -left-20 w-60 h-60 rounded-full blur-3xl opacity-20 animate-pulse delay-1000", currentStatus.bg)} />
-                    </div>
-
-                    {/* Hero Header dengan 3D Effect */}
-                    <div className={cn("relative overflow-hidden p-6 pb-20", currentStatus.bg, currentStatus.glow)}>
-                        {/* Animated Particles Background */}
-                        <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-2 left-4 text-2xl animate-bounce delay-100">{currentStatus.particles[0]}</div>
-                            <div className="absolute top-8 right-8 text-xl animate-bounce delay-300">{currentStatus.particles[1]}</div>
-                            <div className="absolute top-16 left-1/2 text-lg animate-bounce delay-500">{currentStatus.particles[2]}</div>
-                            <div className="absolute bottom-4 right-4 text-2xl animate-bounce delay-700">{currentStatus.particles[0]}</div>
-                        </div>
-
-                        <div className="relative z-10">
-                            <div className="flex items-start gap-3">
-                                {/* 3D Emoji Badge */}
-                                <div className="relative group">
-                                    <div className={cn("absolute inset-0 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity duration-300", currentStatus.bg)} />
-                                    <div className="relative w-16 h-16 rounded-3xl bg-white/30 backdrop-blur-xl flex items-center justify-center text-4xl shadow-2xl ring-4 ring-white/40 transform hover:scale-110 hover:rotate-12 transition-all duration-300 cursor-pointer">
-                                        <span className="animate-bounce">{currentStatus.emoji}</span>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex-1 min-w-0 pt-2">
-                                    <DialogTitle className="text-base font-black text-white mb-2 break-words leading-tight drop-shadow-2xl tracking-tight">
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <DialogContent className="w-full max-w-lg gap-0 p-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:max-w-xl">
+                <div className="space-y-4 p-6">
+                    <DialogHeader className="p-0">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1">
+                                    <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white leading-tight">
                                         {pesanan.acara}
                                     </DialogTitle>
-                                    <div className="flex flex-wrap items-center gap-2 text-white/95 text-xs font-medium">
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm">
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            <span>{displayDate}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span>{pesanan.waktu || '--:--'}</span>
-                                        </div>
-                                    </div>
+                                    <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+                                        {pesanan.yangMengajukan || 'Pengaju tidak tercatat'}
+                                    </DialogDescription>
                                 </div>
+                                <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold", currentStatus.list)}>
+                                    {currentStatus.icon}
+                                    <span className="capitalize">{pesanan.status}</span>
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-600 dark:text-slate-300">
+                                <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1 dark:border-slate-700">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {displayDate}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1 dark:border-slate-700">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    {pesanan.waktu || '--:--'}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1 dark:border-slate-700">
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    {pesanan.lokasi || 'Lokasi belum diisi'}
+                                </span>
                             </div>
                         </div>
-                        
-                        {/* Floating Status Badge dengan Glassmorphism */}
-                        <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 z-20">
-                            <div className={cn("px-5 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl ring-1", currentStatus.border, currentStatus.glow)}>
-                                <div className="flex items-center gap-2">
-                                    <div className={cn("p-1.5 rounded-lg", currentStatus.bg)}>
-                                        {currentStatus.icon}
-                                    </div>
-                                    <span className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-100 dark:to-white bg-clip-text text-transparent">
-                                        {pesanan.status}
-                                    </span>
-                                </div>
-                            </div>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tamu</p>
+                            <p className="text-base font-medium text-slate-900 dark:text-white">{pesanan.tamu || '-'}</p>
                         </div>
-                    </div>
-
-                {/* Content - Scrollable dengan Glassmorphism */}
-                <div className="overflow-y-auto max-h-[calc(90vh-240px)] custom-scrollbar pt-12 pb-4">
-                    <div className="px-4 space-y-3">
-                    
-                    {/* Quick Info Grid dengan Neomorphism */}
-                    <div className="grid grid-cols-2 gap-2.5">
-                        <GlassCard icon="📍" color="blue" label="Lokasi" value={pesanan.lokasi} />
-                        <GlassCard icon="👥" color="green" label="Tamu" value={pesanan.tamu} />
-                        <GlassCard icon="🏢" color="purple" label="Bagian" value={pesanan.untukBagian} />
-                        <GlassCard icon="✍️" color="orange" label="Approval" value={pesanan.approval} />
-                    </div>
-
-                    {/* Pengaju - Holographic Card */}
-                    <div className="group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-blue-500/90 via-indigo-600/90 to-purple-600/90 backdrop-blur-xl shadow-xl border border-white/20 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
-                        {/* Shine Effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                        
-                        {/* Floating Emoji */}
-                        <div className="absolute top-2 right-2 text-5xl opacity-10 group-hover:opacity-20 group-hover:scale-125 transition-all duration-500">👤</div>
-                        
-                        <div className="relative flex items-center gap-3">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-lg" />
-                                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-sm flex items-center justify-center text-white font-black text-lg shadow-lg ring-2 ring-white/30 group-hover:ring-4 group-hover:scale-110 transition-all duration-300">
-                                    {pesanan.yangMengajukan.charAt(0).toUpperCase()}
-                                </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider mb-0.5">Pengaju</p>
-                                <p className="text-white font-bold text-sm truncate drop-shadow-lg">{pesanan.yangMengajukan}</p>
-                            </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Untuk Bagian</p>
+                            <p className="text-base font-medium text-slate-900 dark:text-white">{pesanan.untukBagian || '-'}</p>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Approval</p>
+                            <p className="text-base font-medium text-slate-900 dark:text-white">{pesanan.approval || '-'}</p>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</p>
+                            <p className="text-base font-medium text-slate-900 dark:text-white">{pesanan.status}</p>
                         </div>
                     </div>
 
-                    {/* Catatan - Neon Glow Card */}
                     {pesanan.catatan && (
-                        <div className="group relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br from-amber-400/90 via-orange-500/90 to-rose-500/90 backdrop-blur-xl shadow-xl border border-white/20 hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-all duration-300">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            
-                            <div className="absolute top-2 right-2 text-5xl opacity-10">💭</div>
-                            
-                            <div className="relative flex gap-2.5">
-                                <div className="flex-shrink-0 text-2xl transform group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">📝</div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white/90 text-[10px] font-black uppercase tracking-wider mb-1">Catatan Penting</p>
-                                    <p className="text-white text-xs leading-relaxed drop-shadow">{pesanan.catatan}</p>
-                                </div>
-                            </div>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Catatan</p>
+                            <p className="mt-1 leading-relaxed">{pesanan.catatan}</p>
                         </div>
                     )}
 
-                    {/* Konsumsi - Card Grid dengan Micro Animations */}
-                    <div className="relative">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="relative group/title">
-                                <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl blur-md opacity-50 group-hover/title:opacity-75 transition-opacity" />
-                                <div className="relative px-3 py-1.5 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg">
-                                    <span className="text-white text-xl">🍱</span>
-                                </div>
-                            </div>
-                            <h4 className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
-                                Menu ({pesanan.konsumsi.length} item)
-                            </h4>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            <span>Menu ({pesanan.konsumsi.length} item)</span>
+                            <FileText className="h-4 w-4 text-slate-400" />
                         </div>
-                        
-                        <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
-                            {pesanan.konsumsi.map((item, index) => {
-                                const foodEmojis = ['🍕', '☕', '🍰', '🥤', '🍜', '🍱', '🥗', '🍔', '🌮', '🍣'];
-                                const gradients = [
-                                    'from-rose-500 to-pink-600',
-                                    'from-blue-500 to-cyan-600',
-                                    'from-green-500 to-emerald-600',
-                                    'from-purple-500 to-violet-600',
-                                    'from-orange-500 to-amber-600',
-                                    'from-teal-500 to-cyan-600',
-                                    'from-indigo-500 to-blue-600',
-                                    'from-fuchsia-500 to-pink-600',
-                                ];
-                                const gradient = gradients[index % gradients.length];
-                                const emoji = foodEmojis[index % foodEmojis.length];
-                                
-                                return (
-                                    <div key={index} className="group relative overflow-hidden rounded-xl p-2.5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-lg border-2 border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-xl hover:scale-[1.03] transition-all duration-300">
-                                        {/* Gradient Overlay on Hover */}
-                                        <div className={cn("absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-300", gradient)} />
-                                        
-                                        <div className="relative flex items-center gap-2.5">
-                                            <div className={cn("relative w-9 h-9 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg text-base group-hover:scale-110 group-hover:rotate-12 transition-all duration-300", gradient)}>
-                                                <span className="relative z-10">{emoji}</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-xs text-slate-800 dark:text-slate-100 truncate">{item.jenis}</p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{item.satuan}</p>
-                                            </div>
-                                            <div className={cn("relative px-2.5 py-1 rounded-lg bg-gradient-to-r text-white font-black text-xs shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-300", gradient)}>
-                                                <div className="absolute inset-0 bg-white/20 rounded-lg animate-pulse" />
-                                                <span className="relative">{item.qty}×</span>
-                                            </div>
-                                        </div>
+                        <ul className="space-y-2 max-h-40 overflow-y-auto pr-1 text-sm">
+                            {pesanan.konsumsi.map((item, index) => (
+                                <li
+                                    key={`${item.jenis}-${index}`}
+                                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                                >
+                                    <div>
+                                        <p className="font-medium">{item.jenis}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{item.satuan}</p>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.qty}×</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
-                    {/* Timeline - Futuristic Design */}
                     {pesanan.statusHistory && pesanan.statusHistory.length > 0 && (
-                        <div className="relative">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="relative group/title">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl blur-md opacity-50 group-hover/title:opacity-75 transition-opacity" />
-                                    <div className="relative px-3 py-1.5 rounded-xl bg-gradient-to-br from-green-500 to-teal-600 shadow-lg">
-                                        <span className="text-white text-xl">⏱️</span>
-                                    </div>
-                                </div>
-                                <h4 className="font-black text-sm bg-gradient-to-r from-slate-700 to-slate-900 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
-                                    Riwayat Status
-                                </h4>
-                            </div>
-                            
-                            <div className="relative pl-6 space-y-2">
-                                {/* Vertical Line with Gradient */}
-                                <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 opacity-30" />
-                                
-                                {pesanan.statusHistory.map((item, index) => {
-                                    const statusEmojis: Record<string, string> = {
-                                        'Pesanan Dibuat': '📝',
-                                        'Pesanan Disetujui': '✅',
-                                        'Pesanan Ditolak': '❌',
-                                        'Pesanan Selesai': '🎉',
-                                        'Pesanan Dibatalkan': '🚫',
-                                    };
-                                    const emoji = statusEmojis[item.status] || '📌';
-                                    
-                                    return (
-                                        <div key={index} className="relative group/item">
-                                            {/* Timeline Node */}
-                                            <div className="absolute -left-6 top-0">
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full blur-md opacity-50 group-hover/item:opacity-100 transition-opacity" />
-                                                    <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-xl text-sm transform group-hover/item:scale-125 group-hover/item:rotate-12 transition-all duration-300">
-                                                        {emoji}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Content Card */}
-                                            <div className="relative overflow-hidden rounded-xl p-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-lg border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-                                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-purple-500/5 to-pink-500/0 group-hover/item:via-purple-500/10 transition-colors duration-300" />
-                                                
-                                                <div className="relative">
-                                                    <p className="font-black text-xs text-slate-800 dark:text-slate-100 mb-1">{item.status}</p>
-                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight">
-                                                        {item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID', { 
-                                                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
-                                                        }) : '-'} • <span className="font-bold">{item.oleh}</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Riwayat Status</h4>
+                            <ul className="space-y-2 text-sm">
+                                {pesanan.statusHistory.map((item, index) => (
+                                    <li
+                                        key={`${item.status}-${index}`}
+                                        className="rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700"
+                                    >
+                                        <p className="font-medium text-slate-900 dark:text-white">{item.status}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {item.timestamp
+                                                ? new Date(item.timestamp).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                                                : '-'}
+                                            {item.oleh ? ` • ${item.oleh}` : ''}
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     )}
-                    </div>
                 </div>
-
-                {/* Footer - Holographic Button */}
-                <div className="relative p-4 border-t border-white/10 bg-gradient-to-r from-slate-50/50 to-white/50 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-xl">
+                <div className="border-t border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70">
                     <DialogClose asChild>
-                        <Button type="button" className="group relative w-full h-12 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-black text-sm shadow-2xl hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] transition-all duration-300 hover:scale-[1.02] border-2 border-white/20">
-                            {/* Shine Effect */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            
-                            <span className="relative flex items-center justify-center gap-2">
-                                <span className="text-xl animate-pulse">✨</span>
-                                <span className="drop-shadow-lg">Tutup</span>
-                                <span className="text-xl animate-pulse delay-150">✨</span>
-                            </span>
+                        <Button type="button" className="w-full">
+                            Tutup
                         </Button>
                     </DialogClose>
-                </div>
                 </div>
             </DialogContent>
         </Dialog>
     );
 };
-
-// GlassCard Component - Glassmorphism
-const GlassCard = ({ icon, color, label, value }: { icon: string, color: string, label: string, value: string | undefined | null }) => {
-    const colorMap = {
-        blue: 'from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30',
-        green: 'from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30',
-        purple: 'from-purple-500/20 to-fuchsia-500/20 hover:from-purple-500/30 hover:to-fuchsia-500/30',
-        orange: 'from-orange-500/20 to-rose-500/20 hover:from-orange-500/30 hover:to-rose-500/30',
-    };
-    
-    return (
-        <div className={cn("group relative overflow-hidden rounded-2xl p-3 bg-gradient-to-br backdrop-blur-xl border border-white/20 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300", colorMap[color as keyof typeof colorMap])}>
-            {/* Shimmer Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-            
-            {/* Background Emoji */}
-            <div className="absolute top-1 right-1 text-4xl opacity-5 group-hover:opacity-10 group-hover:scale-125 transition-all duration-500">{icon}</div>
-            
-            <div className="relative flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm flex items-center justify-center shadow-lg text-lg group-hover:scale-110 group-hover:rotate-12 transition-all duration-300">
-                    {icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-[9px] uppercase tracking-wider text-slate-600 dark:text-slate-300 font-black leading-tight">{label}</p>
-                    <p className="text-xs font-black text-slate-800 dark:text-slate-100 truncate leading-tight mt-0.5 drop-shadow" title={value || '-'}>{value || '-'}</p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// MiniCard removed (unused) — kept out to avoid lint warning; re-add if needed later.
 
 // --- KOMPONEN WIDGET & STATS ---
 
@@ -418,6 +267,16 @@ const StatCard = ({ icon, title, value, iconBgClass }: { icon: React.ReactNode, 
         </div>
     </Card>
 );
+
+const formatSearchDateLabel = (value?: string) => {
+    if (!value) return "Semua tanggal";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+        ? value
+        : parsed.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const VIEW_MODE_STORAGE_KEY = 'dashboard:viewMode';
 
 // --- Tipe Props Dashboard ---
 interface PemesananDashboardProps {
@@ -454,30 +313,43 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
 }) => {
 
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-    const handleCloseModal = () => actions.setIsDetailDialogOpen(false);
+    const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-    // Konfigurasi status
-    const statusConfig: Record<Pemesanan['status'], { list: string, grid: string, icon: React.ReactNode }> = {
-        'Menunggu': { list: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', grid: 'border-yellow-500', icon: <Clock className="w-3 h-3" /> },
-        'Disetujui': { list: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200', grid: 'border-purple-500', icon: <CheckCircle2 className="w-3 h-3" /> },
-        'Ditolak': { list: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', grid: 'border-red-500', icon: <XCircle className="w-3 h-3" /> },
-        'Selesai': { list: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', grid: 'border-green-500', icon: <CheckCircle2 className="w-3 h-3" /> },
-        'Dibatalkan': { list: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200', grid: 'border-gray-500', icon: <XCircle className="w-3 h-3" /> },
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const storedMode = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+        if (storedMode === 'list' || storedMode === 'grid') {
+            setViewMode(storedMode);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+    }, [viewMode]);
+    const handleCloseModal = () => actions.setIsDetailDialogOpen(false);
+    const handleMobileFilterToggle = () => {
+        setIsMobileFilterOpen((prev) => !prev);
+        if (typeof window !== 'undefined') {
+            const target = document.getElementById('dashboard-filters');
+            target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     };
 
+    const filterSummaryChips = useMemo(() => ([
+        { label: 'Status', value: filterStatus === 'Semua' ? 'Semua status' : filterStatus },
+        { label: 'Urutan', value: sortOrder },
+        { label: 'Tanggal', value: formatSearchDateLabel(searchDate) },
+    ]), [filterStatus, sortOrder, searchDate]);
+    const statusConfig = STATUS_CONFIG;
     return (
         <TooltipProvider>
             {/* Bungkus dengan Fragment (<>) untuk mengatasi error single child */}
             <>
-                <div className="font-['Poppins',_sans-serif]">
-                    <style>{` @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap');`}</style>
+                <div className="pb-28 sm:pb-0 theme-transition">
 
                     {/* Header - Mobile-First Optimized */}
                     <div className="flex flex-col gap-3 mb-6 sm:mb-8">
-                        <div className="space-y-1">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 leading-tight">Dasbor Pesanan</h2>
-                            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">Selamat datang! Berikut ringkasan pesanan Anda.</p>
-                        </div>
                         <Button 
                             size="lg" 
                             onClick={onNewOrderClick} 
@@ -517,36 +389,81 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                         </CardHeader>
                         <CardContent className="p-3 sm:p-4 md:p-6 dark:bg-slate-800">
                             {/* Filter & Export Controls - Mobile-First */}
-                            <div className="flex flex-col gap-3 mb-4 pb-4 border-b dark:border-slate-700">
-                                {/* Mobile: Stack all filters vertically */}
-                                <div className="flex flex-col gap-2 w-full">
-                                    {/* Date Filter */}
-                                    <div className="relative w-full">
-                                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                            <div id="dashboard-filters" className="flex flex-col gap-3 mb-4 pb-4 border-b dark:border-slate-700">
+                                <div className="sm:hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/70 p-3 space-y-2">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ringkasan Filter</p>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500">Tap untuk membuka pengaturan</p>
                                         </div>
-                                        <input
-                                            type="date"
-                                            value={searchDate}
-                                            onChange={(e) => actions.setSearchDate(e.target.value)}
-                                            className="h-11 sm:h-10 w-full rounded-lg sm:rounded-md border border-input bg-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white pl-10 pr-3 py-2 text-base sm:text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                        />
-                                    </div>
-                                    
-                                    {/* Status & Sort Filters in 2 columns on mobile */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <select
-                                            value={filterStatus}
-                                            onChange={(e) => actions.setFilterStatus(e.target.value as Pemesanan['status'] | 'Semua')}
-                                            className="h-11 sm:h-10 w-full rounded-lg sm:rounded-md border border-input bg-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white px-3 py-2 text-base sm:text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleMobileFilterToggle}
+                                            className="h-9 px-3 rounded-lg"
                                         >
-                                            <option value="Semua">Semua</option>
-                                            <option value="Menunggu">Menunggu</option>
-                                            <option value="Disetujui">Disetujui</option>
-                                            <option value="Ditolak">Ditolak</option>
-                                            <option value="Selesai">Selesai</option>
-                                            <option value="Dibatalkan">Dibatalkan</option>
-                                        </select>
+                                            {isMobileFilterOpen ? 'Tutup' : 'Atur'}
+                                            <ChevronDown className={cn("h-4 w-4 ml-1 transition-transform", isMobileFilterOpen && 'rotate-180')} />
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {filterSummaryChips.map((chip) => (
+                                            <span
+                                                key={chip.label}
+                                                className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-200"
+                                            >
+                                                <span className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">{chip.label}</span>
+                                                <span className="font-semibold text-slate-700 dark:text-white">{chip.value}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className={cn(
+                                    "flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
+                                    isMobileFilterOpen ? 'sm:flex' : 'hidden sm:flex'
+                                )}>
+                                    <div className="flex flex-col gap-2 w-full sm:flex-1">
+                                        <div className="relative w-full">
+                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                                <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                                            </div>
+                                            <input
+                                                type="date"
+                                                value={searchDate}
+                                                onChange={(e) => actions.setSearchDate(e.target.value)}
+                                                className="h-11 sm:h-10 w-full rounded-lg sm:rounded-md border border-input bg-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white pl-10 pr-3 py-2 text-base sm:text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</p>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500">Geser untuk opsi lain</span>
+                                            </div>
+                                            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 sm:overflow-visible sm:flex-wrap sm:-mx-0 sm:px-0">
+                                                {STATUS_FILTER_OPTIONS.map((statusOption) => {
+                                                    const isActive = filterStatus === statusOption;
+                                                    return (
+                                                        <button
+                                                            key={statusOption}
+                                                            type="button"
+                                                            onClick={() => actions.setFilterStatus(statusOption)}
+                                                            aria-pressed={isActive}
+                                                            className={cn(
+                                                                "flex-shrink-0 rounded-2xl border px-4 py-2 text-sm font-semibold transition-colors",
+                                                                "dark:border-slate-600",
+                                                                isActive
+                                                                    ? "bg-blue-600 text-white border-blue-600 shadow"
+                                                                    : "bg-white text-slate-600 border-slate-200 dark:bg-slate-800/70 dark:text-slate-200"
+                                                            )}
+                                                        >
+                                                            {statusOption}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                         <select
                                             value={sortOrder}
                                             onChange={(e) => actions.setSortOrder(e.target.value as 'Terbaru' | 'Terlama')}
@@ -556,18 +473,16 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                             <option value="Terlama">Terlama</option>
                                         </select>
                                     </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="default"
+                                        onClick={actions.exportCSV} 
+                                        className="w-full sm:w-auto h-11 sm:h-10 dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 text-base sm:text-sm"
+                                    >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Export CSV
+                                    </Button>
                                 </div>
-                                
-                                {/* Export Button */}
-                                <Button 
-                                    variant="outline" 
-                                    size="default"
-                                    onClick={actions.exportCSV} 
-                                    className="w-full h-11 sm:h-10 dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600 text-base sm:text-sm"
-                                >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    Export CSV
-                                </Button>
                             </div>
 
                             {/* Daftar atau Grid Pesanan */}
@@ -583,7 +498,7 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                 </div>
                             ) : (
                                 // Tabs dengan List dan Grid View - Mobile-First Optimized
-                                <Tabs defaultValue={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'grid')} className="w-full">
+                                <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'grid')} className="w-full">
                                     <TabsList className="grid w-full grid-cols-2 h-11 sm:h-10 mb-4">
                                         <TabsTrigger value="list" className="flex items-center justify-center gap-2 text-sm sm:text-base data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800">
                                             <List className="w-4 h-4" />
@@ -595,39 +510,53 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                         </TabsTrigger>
                                     </TabsList>
                                     
-                                    <TabsContent value="list" className="space-y-3 mt-0">
-                                    {filteredAndSortedRiwayat.map((item) => {
-                                        const config = statusConfig[item.status] || statusConfig['Dibatalkan'];
-                                        const displayDate = item.tanggalPengiriman ? new Date(item.tanggalPengiriman) : null;
+                                    <TabsContent value="list" className="space-y-2.5 mt-0">
+                                        {filteredAndSortedRiwayat.map((item) => {
+                                            const config = statusConfig[item.status] || statusConfig['Dibatalkan'];
+                                            const displayDate = item.tanggalPengiriman ? new Date(item.tanggalPengiriman) : null;
+                                            const readableDate = displayDate
+                                                ? displayDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                : 'Tanggal belum ditentukan';
+                                            const monthLabel = displayDate ? displayDate.toLocaleDateString('id-ID', { month: 'short' }) : null;
+                                            const dayNumber = displayDate?.getDate();
+                                            const progressValue = getStatusProgress(item.status);
 
-                                        // Tampilan List Item - Mobile-First Optimized
                                             return (
                                                 <div
                                                     key={item.id}
-                                                    className="bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 active:bg-slate-100 dark:active:bg-slate-600 rounded-xl shadow-sm border dark:border-slate-600 flex flex-col p-4 gap-3 w-full transition-colors"
+                                                    className={cn(
+                                                        "group flex flex-col rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+                                                        config.grid
+                                                    )}
                                                 >
-                                                    {/* Mobile: Header Row with Date & Status */}
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        {/* Date Badge */}
-                                                        <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg flex-shrink-0", config.list)}>
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4">
+                                                        <div className="flex items-center gap-3">
                                                             {displayDate ? (
-                                                                <>
-                                                                    <span className="text-xs font-bold uppercase leading-none">{displayDate.toLocaleDateString('id-ID', { month: 'short' })}</span>
-                                                                    <span className="text-xl sm:text-2xl font-extrabold leading-none">{displayDate.getDate()}</span>
-                                                                </>
-                                                            ) : ( <span className="text-sm font-bold">--</span> )}
+                                                                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-900/40 dark:text-slate-200 dark:border-slate-700">
+                                                                    <span className="text-[10px] font-semibold uppercase tracking-wide">{monthLabel ?? '--'}</span>
+                                                                    <span className="text-base font-bold text-slate-900 dark:text-white">{dayNumber ?? '--'}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center justify-center w-12 h-12 rounded-xl border border-dashed border-slate-200 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500">
+                                                                    N/A
+                                                                </div>
+                                                            )}
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">Acara</p>
+                                                                <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-tight line-clamp-2">
+                                                                    {item.acara}
+                                                                </h3>
+                                                            </div>
                                                         </div>
-                                                        
-                                                        {/* Status & Actions */}
                                                         <div className="flex items-center gap-2">
-                                                            <span className={cn("flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap", config.list)}>
+                                                            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold", config.list)}>
                                                                 {config.icon}
-                                                                <span className="hidden xs:inline">{item.status}</span>
+                                                                <span className="capitalize">{item.status}</span>
                                                             </span>
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" size="sm" className="p-2.5 h-9 w-9 rounded-lg dark:hover:bg-slate-600 active:scale-95">
-                                                                        <MoreVertical className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                                                    <Button variant="outline" size="sm" className="h-8 px-2">
+                                                                        <MoreVertical className="w-4 h-4" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end" className="w-44">
@@ -638,8 +567,8 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                                                     {item.status === 'Menunggu' && (
                                                                         <>
                                                                             <DropdownMenuSeparator />
-                                                                            <DropdownMenuItem 
-                                                                                onClick={() => actions.openDeleteConfirm(item.id, item.acara)} 
+                                                                            <DropdownMenuItem
+                                                                                onClick={() => actions.openDeleteConfirm(item.id, item.acara)}
                                                                                 className="cursor-pointer h-10 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
                                                                             >
                                                                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -651,28 +580,51 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                                             </DropdownMenu>
                                                         </div>
                                                     </div>
-                                                    
-                                                    {/* Content */}
-                                                    <div className="space-y-2.5">
-                                                        <h3 className="font-bold text-gray-800 dark:text-slate-100 text-base sm:text-lg leading-tight line-clamp-2">{item.acara}</h3>
-                                                        
-                                                        <div className="flex flex-col gap-1.5 text-sm text-gray-600 dark:text-slate-400">
-                                                            <div className="flex items-center gap-2">
-                                                                <Clock className="w-4 h-4 flex-shrink-0 text-blue-500" />
-                                                                <span className="font-medium">{item.waktu || '--:--'}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <MapPin className="w-4 h-4 flex-shrink-0 text-red-500" />
-                                                                <span className="line-clamp-1 font-medium">{item.lokasi}</span>
-                                                            </div>
+
+                                                    <div className="grid gap-2 px-3.5 sm:px-4 pb-3 text-[13px] sm:text-sm text-slate-700 dark:text-slate-300">
+                                                        <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900/30">
+                                                            <Calendar className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                                            <span className="font-medium">{readableDate}</span>
                                                         </div>
-                                                        
-                                                        {/* Progress Bar */}
-                                                        <div className="flex items-center gap-3 pt-1">
-                                                            <StatusProgressBar status={item.status} />
-                                                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap tabular-nums">
-                                                                {getStatusProgress(item.status)}%
-                                                            </span>
+                                                        <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900/30">
+                                                            <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                                            <span className="font-medium">{item.waktu || '--:--'}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-900/30">
+                                                            <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                                            <span className="line-clamp-1 font-medium">{item.lokasi || 'Lokasi belum diisi'}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2.5 px-3.5 sm:px-4 pb-3">
+                                                        <StatusProgressBar status={item.status} />
+                                                        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap tabular-nums">{progressValue}%</span>
+                                                    </div>
+
+                                                    <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-3.5 py-3 sm:px-4 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+                                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                                                            <FileText className="w-3.5 h-3.5" />
+                                                            <span>{item.konsumsi.length} Item</span>
+                                                        </div>
+                                                        <div className="ml-auto flex items-center gap-2">
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                className="h-8 px-3 bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+                                                                onClick={() => actions.viewOrderDetails(item)}
+                                                            >
+                                                                Detail
+                                                            </Button>
+                                                            {item.status === 'Menunggu' && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="h-8 px-3"
+                                                                    onClick={() => actions.openDeleteConfirm(item.id, item.acara)}
+                                                                >
+                                                                    Batalkan
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -684,122 +636,137 @@ const PemesananDashboard: React.FC<PemesananDashboardProps> = ({
                                         {filteredAndSortedRiwayat.map((item) => {
                                             const config = statusConfig[item.status] || statusConfig['Dibatalkan'];
                                             const displayDate = item.tanggalPengiriman ? new Date(item.tanggalPengiriman) : null;
-                                            
-                                            // Tampilan Grid Item - Mobile-First Optimized
+                                            const monthLabel = displayDate ? displayDate.toLocaleDateString('id-ID', { month: 'short' }) : null;
+                                            const dayNumber = displayDate?.getDate();
+                                            const progressValue = getStatusProgress(item.status);
+
                                             return (
                                                 <div
-                                                        key={item.id}
-                                                        className={cn(
-                                                            "group relative rounded-xl flex flex-col bg-white dark:bg-slate-800 border-2 shadow-lg hover:shadow-2xl active:shadow-xl overflow-hidden transition-shadow",
-                                                            config.grid
-                                                        )}
-                                                    >
-                                                        {/* Decorative gradient overlay */}
-                                                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                        
-                                                        {/* Status Badge - Floating style */}
-                                                        <div className="absolute top-3 right-3 z-10">
-                                                            <span
-                                                                className={cn("flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-full shadow-md backdrop-blur-sm", config.list)}
-                                                            >
-                                                                {config.icon}
-                                                                <span className="hidden xs:inline">{item.status}</span>
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Date Badge - Creative circular design */}
-                                                        <div className="absolute top-3 left-3 z-10">
+                                                    key={item.id}
+                                                    className={cn(
+                                                        "group flex h-full flex-col rounded-2xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm ring-offset-2 ring-offset-white dark:ring-offset-slate-900 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl",
+                                                        config.grid
+                                                    )}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
+                                                        <div className="flex items-center gap-3">
                                                             {displayDate ? (
-                                                                <div 
-                                                                    className={cn("flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg font-bold", config.list)}
-                                                                >
-                                                                    <span className="text-[10px] sm:text-xs uppercase leading-none">{displayDate.toLocaleDateString('id-ID', { month: 'short' })}</span>
-                                                                    <span className="text-lg sm:text-xl leading-none mt-0.5">{displayDate.getDate()}</span>
+                                                                <div className="flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-200">
+                                                                    <span className="text-[10px] font-semibold uppercase tracking-wide">{monthLabel ?? '--'}</span>
+                                                                    <span className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">{dayNumber ?? '--'}</span>
                                                                 </div>
                                                             ) : (
-                                                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-400 text-xs font-bold">N/A</div>
+                                                                <div className="flex flex-col items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-dashed border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500 text-xs font-semibold">
+                                                                    N/A
+                                                                </div>
                                                             )}
+                                                            <div className="space-y-1">
+                                                                <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Acara</p>
+                                                                <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-tight line-clamp-2">
+                                                                    {item.acara}
+                                                                </h3>
+                                                            </div>
                                                         </div>
+                                                        <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shadow-sm", config.list)}>
+                                                            {config.icon}
+                                                            <span className="capitalize">{item.status}</span>
+                                                        </span>
+                                                    </div>
 
-                                                        {/* Main Content */}
-                                                        <div className="p-4 sm:p-5 pt-16 sm:pt-20 space-y-3 flex-grow">
-                                                            {/* Title with gradient on hover */}
-                                                            <h3 className="font-bold text-gray-800 dark:text-slate-100 text-base leading-tight line-clamp-2 sm:group-hover:text-transparent sm:group-hover:bg-clip-text sm:group-hover:bg-gradient-to-r sm:group-hover:from-blue-600 sm:group-hover:to-purple-600">
-                                                                {item.acara}
-                                                            </h3>
-                                                            
-                                                            {/* Info items with icons */}
-                                                            <div className="space-y-2">
-                                                                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                                                                    <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                                                    <span className="font-medium">{item.waktu || '--:--'}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
-                                                                    <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
-                                                                    <span className="line-clamp-1 font-medium">{item.lokasi}</span>
-                                                                </div>
+                                                    <div className="flex flex-col gap-3 px-4 sm:px-5 pb-4 flex-1">
+                                                        <div className="grid gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                                            <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/30">
+                                                                <Clock className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                                                <span className="font-medium">{item.waktu || '--:--'}</span>
                                                             </div>
-
-                                                            {/* Status Progress Bar */}
-                                                            <div className="space-y-1.5">
-                                                                <div className="flex items-center justify-between text-xs">
-                                                                    <span className="font-medium text-slate-600 dark:text-slate-400">Progress</span>
-                                                                    <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{getStatusProgress(item.status)}%</span>
-                                                                </div>
-                                                                <StatusProgressBar status={item.status} />
-                                                            </div>
-
-                                                            {/* Konsumsi count badge */}
-                                                            <div className="flex items-center gap-2 text-xs">
-                                                                <div className="bg-gradient-to-r from-orange-100 to-yellow-100 dark:from-orange-900/30 dark:to-yellow-900/30 text-orange-700 dark:text-orange-300 px-2.5 sm:px-3 py-1.5 rounded-full font-semibold flex items-center gap-1.5">
-                                                                    <FileText className="w-3.5 h-3.5" />
-                                                                    <span>{item.konsumsi.length} Item</span>
-                                                                </div>
+                                                            <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/30">
+                                                                <MapPin className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                                                <span className="line-clamp-1 font-medium">{item.lokasi || 'Lokasi belum diisi'}</span>
                                                             </div>
                                                         </div>
 
-                                                        {/* Action Buttons - Mobile-First */}
-                                                        <div className="border-t dark:border-slate-700 p-3 sm:p-3.5 bg-gradient-to-br from-slate-50/80 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-900/50 backdrop-blur-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                {/* View Button - Primary */}
-                                                                <Button
-                                                                    onClick={() => actions.viewOrderDetails(item)}
-                                                                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 active:scale-95 transition-transform h-10 sm:h-9 text-sm"
-                                                                    size="sm"
-                                                                >
-                                                                    <Eye className="w-4 h-4" />
-                                                                    <span>Lihat</span>
-                                                                </Button>
-
-                                                                {/* Dropdown Menu for more actions */}
-                                                                {item.status === 'Menunggu' && (
-                                                                    <DropdownMenu>
-                                                                        <DropdownMenuTrigger asChild>
-                                                                            <Button variant="outline" size="sm" className="px-2.5 h-10 sm:h-9 active:scale-95">
-                                                                                <MoreVertical className="w-4 h-4" />
-                                                                            </Button>
-                                                                        </DropdownMenuTrigger>
-                                                                        <DropdownMenuContent align="end" className="w-44">
-                                                                            <DropdownMenuItem 
-                                                                                onClick={() => actions.openDeleteConfirm(item.id, item.acara)} 
-                                                                                className="cursor-pointer h-10 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
-                                                                            >
-                                                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                                                Hapus
-                                                                            </DropdownMenuItem>
-                                                                        </DropdownMenuContent>
-                                                                    </DropdownMenu>
-                                                                )}
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                                <span>Progress</span>
+                                                                <span className="text-slate-700 dark:text-slate-200 tabular-nums">{progressValue}%</span>
                                                             </div>
+                                                            <StatusProgressBar status={item.status} />
                                                         </div>
                                                     </div>
-                                                );
+
+                                                    <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 px-4 py-3 sm:px-5 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
+                                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                                                            <FileText className="w-3.5 h-3.5" />
+                                                            <span>{item.konsumsi.length} Item</span>
+                                                        </div>
+                                                        <div className="ml-auto flex items-center gap-2">
+                                                            <Button
+                                                                onClick={() => actions.viewOrderDetails(item)}
+                                                                className="flex-1 sm:flex-none bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 h-9 text-sm px-4"
+                                                                size="sm"
+                                                            >
+                                                                <Eye className="w-4 h-4 mr-1.5" />
+                                                                Lihat
+                                                            </Button>
+                                                            {item.status === 'Menunggu' && (
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="outline" size="sm" className="px-2.5 h-9">
+                                                                            <MoreVertical className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="w-44">
+                                                                        <DropdownMenuItem 
+                                                                            onClick={() => actions.openDeleteConfirm(item.id, item.acara)} 
+                                                                            className="cursor-pointer h-10 text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                                            Hapus
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
                                         })}
                                     </TabsContent>
                                 </Tabs>
                             )}
                         </CardContent>
                     </Card>
+                </div>
+
+                {/* Sticky mobile action rail */}
+                <div className="sm:hidden fixed bottom-4 left-0 right-0 z-40 px-4">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur p-3 shadow-2xl flex items-center gap-2">
+                        <Button
+                            className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                            onClick={onNewOrderClick}
+                        >
+                            <PlusCircle className="w-4 h-4 mr-2" />
+                            Pesanan Baru
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-12 w-12 rounded-xl"
+                            onClick={handleMobileFilterToggle}
+                            aria-label="Buka filter"
+                        >
+                            <SlidersHorizontal className="w-5 h-5" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-12 w-12 rounded-xl"
+                            onClick={actions.exportCSV}
+                            aria-label="Export CSV"
+                        >
+                            <Download className="w-5 h-5" />
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Modal Detail */}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-// DIUBAH: Menggunakan alias path '@' untuk konsistensi
+// ana: Menggunakan alias path '@' untuk konsistensi
 import { formSchema, type Pemesanan, type FormInputData, type StatusHistoryItem } from '@/lib/schema';
+import { storage } from '@/lib/storage';
+import type { StorageAdapter } from '@/lib/storage';
 import { useToast } from "@/components/ui/use-toast"; // Gunakan hook toast dari shadcn
 import * as z from 'zod'; // Impor z untuk error handling
 
@@ -15,7 +17,7 @@ interface OrderToDeleteInfo {
   acara: string;
 }
 
-export function usePemesanan() {
+export function usePemesanan(adapter?: StorageAdapter) {
   const [riwayat, setRiwayat] = useState<Pemesanan[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Pemesanan | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("Semua");
@@ -25,22 +27,29 @@ export function usePemesanan() {
 
   // State untuk konfirmasi hapus
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
-  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);  const { toast } = useToast(); // Gunakan hook toast
+
+	const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<OrderToDeleteInfo | null>(null);
+	const { toast } = useToast(); // Gunakan hook toast
+
+	// Storage adapter (dapat di-inject melalui parameter, default ke localStorage adapter)
+	const storageAdapter = adapter ?? storage;
 
   // --- LOCALSTORAGE EFFECTS ---
-  useEffect(() => {
-  	try {
-  	  const savedRiwayat = localStorage.getItem('riwayatPemesanan');
 
-  	  let loadedRiwayat: Pemesanan[] = [];
-  	  if (savedRiwayat) {
-  		loadedRiwayat = JSON.parse(savedRiwayat);
-  		// Pastikan konsumsi selalu array
-  		loadedRiwayat = loadedRiwayat.map(order => ({
-  		  ...order,
-  		  konsumsi: Array.isArray(order.konsumsi) ? order.konsumsi : []
-  		}));
-  	  } else {
+	useEffect(() => {
+
+		try {
+			const savedRiwayat = storageAdapter.getItem<Pemesanan[]>('riwayatPemesanan');
+
+   	  let loadedRiwayat: Pemesanan[] = [];
+   	  if (savedRiwayat) {
+   		loadedRiwayat = savedRiwayat;
+   		// Pastikan konsumsi selalu array
+   		loadedRiwayat = loadedRiwayat.map(order => ({
+   		  ...order,
+   		  konsumsi: Array.isArray(order.konsumsi) ? order.konsumsi : []
+   		}));
+   	  } else {
   		// DEMO DATA: Sample data lengkap untuk showcase semua fitur
   		loadedRiwayat = [
   		  {
@@ -177,41 +186,81 @@ export function usePemesanan() {
   		];
   	  }
 
-  	  // Update status 'Menunggu'/'Disetujui' menjadi 'Selesai' jika tanggal sudah lewat
-  	  const today = new Date();
-  	  today.setHours(0, 0, 0, 0);
+	  // Update status otomatis (auto reject & auto selesai) berdasar tanggal
+	  const today = new Date();
+	  today.setHours(0, 0, 0, 0);
 
-  	  const updatedRiwayat = loadedRiwayat.map(order => {
-  		if ((order.status === 'Menunggu' || order.status === 'Disetujui') && new Date(order.tanggalPengiriman) < today) {
-  		  // Cek apakah sudah ada status 'Selesai' sebelumnya
-  		  const alreadyFinished = order.statusHistory?.some(h => h.status === 'Pesanan Selesai');
-  		  if (!alreadyFinished) {
-  			const newHistoryEntry: StatusHistoryItem = {
-  			  timestamp: new Date().toLocaleString('id-ID'),
-  			  status: 'Pesanan Selesai',
-  			  oleh: 'Sistem',
-  			};
-  			return { ...order, status: 'Selesai' as OrderStatus, statusHistory: [...(order.statusHistory || []), newHistoryEntry] };
-  		  }
-  		}
-  		return order;
-  	  });
+	  const normalizeDate = (value?: string) => {
+		if (!value) return null;
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) return null;
+		parsed.setHours(0, 0, 0, 0);
+		return parsed;
+	  };
 
-  	  setRiwayat(updatedRiwayat);
+	  const autoRejectedOrders: string[] = [];
+
+	  const updatedRiwayat = loadedRiwayat.map(order => {
+		const requestDate = normalizeDate(order.tanggalPermintaan);
+		const deliveryDate = normalizeDate(order.tanggalPengiriman);
+
+		const shouldAutoReject = order.status === 'Menunggu' && requestDate !== null && requestDate < today;
+		if (shouldAutoReject) {
+		  const autoRejectEntry: StatusHistoryItem = {
+			timestamp: new Date().toLocaleString('id-ID'),
+			status: 'Pesanan Ditolak Otomatis',
+			oleh: 'Sistem',
+		  };
+		  autoRejectedOrders.push(order.acara || order.id);
+		  return {
+			...order,
+			status: 'Ditolak' as OrderStatus,
+			statusHistory: [...(order.statusHistory || []), autoRejectEntry],
+		  };
+		}
+
+		const shouldAutoComplete =
+		  (order.status === 'Menunggu' || order.status === 'Disetujui') &&
+		  deliveryDate !== null &&
+		  deliveryDate < today;
+		if (shouldAutoComplete) {
+		  const alreadyFinished = order.statusHistory?.some(h => h.status === 'Pesanan Selesai');
+		  if (!alreadyFinished) {
+			const newHistoryEntry: StatusHistoryItem = {
+			  timestamp: new Date().toLocaleString('id-ID'),
+			  status: 'Pesanan Selesai',
+			  oleh: 'Sistem',
+			};
+			return { ...order, status: 'Selesai' as OrderStatus, statusHistory: [...(order.statusHistory || []), newHistoryEntry] };
+		  }
+		}
+
+		return order;
+	  });
+
+	  setRiwayat(updatedRiwayat);
+	  if (autoRejectedOrders.length > 0) {
+		const title = autoRejectedOrders.length === 1
+		  ? '1 pesanan melewati batas permintaan'
+		  : `${autoRejectedOrders.length} pesanan melewati batas permintaan`;
+		const description = autoRejectedOrders.length === 1
+		  ? `Pesanan "${autoRejectedOrders[0]}" otomatis ditolak karena tanggal permintaan sudah lewat.`
+		  : 'Beberapa pesanan otomatis ditolak karena tanggal permintaan sudah lewat.';
+		toast({ title, description, variant: 'destructive' });
+	  }
   	} catch (error) {
   	  console.error("Gagal memuat atau memproses data dari localStorage:", error);
   	  toast({ title: "Error", description: "Gagal memuat data tersimpan.", variant: "destructive" });
   	}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Hanya dijalankan sekali saat mount
+		}, [storageAdapter, toast]); // Hanya dijalankan sekali saat mount atau ketika adapter berubah
   // Efek untuk menyimpan ke localStorage ketika riwayat berubah
   useEffect(() => {
   	try {
-  	  localStorage.setItem('riwayatPemesanan', JSON.stringify(riwayat));
+   	  storageAdapter.setItem('riwayatPemesanan', riwayat);
   	} catch (error) {
   	  console.error("Gagal menyimpan data ke localStorage:", error);
   	}
-  }, [riwayat]);  // --- DATA COMPUTATION (Filter & Sort) ---
+	}, [riwayat, storageAdapter]);  // --- DATA COMPUTATION (Filter & Sort) ---
   const { counts, filteredAndSortedRiwayat } = useMemo(() => {
   	// Inisialisasi counts
   	const calculatedCounts: Record<OrderStatus | 'Total', number> = {
@@ -252,8 +301,8 @@ export function usePemesanan() {
   	};
   }, [riwayat, filterStatus, sortOrder, searchDate]);
 
-  // --- ACTIONS ---
-  const addOrder = useCallback((values: FormInputData) => {
+	// --- ACTIONS ---
+	const addOrder = useCallback((values: FormInputData) => {
   	const initialHistory: StatusHistoryItem = {
   	  timestamp: new Date().toLocaleString('id-ID'), // Format tanggal lokal
   	  status: 'Pesanan Dibuat',
@@ -295,8 +344,9 @@ export function usePemesanan() {
   		}
   		return false; // Indicate failure
   	}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);  const updateStatus = useCallback((id: string, newStatus: 'Disetujui' | 'Ditolak' | 'Dibatalkan', updatedBy: string = 'Admin') => {
+	}, [toast]);
+
+	const updateStatus = useCallback((id: string, newStatus: 'Disetujui' | 'Ditolak' | 'Dibatalkan', updatedBy: string = 'Admin') => {
   	setRiwayat(prevRiwayat =>
   	  prevRiwayat.map(item => {
   		if (item.id === id) {
@@ -325,8 +375,7 @@ export function usePemesanan() {
   	  })
   	);
   	toast({ title: "Status Diperbarui", description: `Pesanan kini ${newStatus}.` });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+	}, [toast]);
 
 
   // Fungsi untuk membuka modal konfirmasi hapus
@@ -348,8 +397,15 @@ export function usePemesanan() {
   	  toast({ title: "Pesanan Dihapus", description: `Pesanan "${orderToDeleteInfo.acara}" telah berhasil dihapus.` });
   	  closeDeleteConfirm(); // Tutup modal setelah menghapus
   	}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderToDeleteInfo, closeDeleteConfirm]);  const exportCSV = useCallback(() => {
+	}, [orderToDeleteInfo, closeDeleteConfirm, toast]);  
+
+ // Test-friendly direct delete API (hapus langsung tanpa modal)
+ const deleteById = useCallback((id: string) => {
+	 setRiwayat(prev => prev.filter(item => item.id !== id));
+	 toast({ title: "Pesanan Dihapus", description: `Pesanan telah berhasil dihapus.` });
+ }, [toast]);
+
+	const exportCSV = useCallback(() => {
   	if (filteredAndSortedRiwayat.length === 0) {
   	  toast({ title: "Tidak Ada Data", description: "Tidak ada data riwayat untuk diekspor.", variant:"destructive" });
   	  return;
@@ -383,9 +439,8 @@ export function usePemesanan() {
   	document.body.appendChild(link); // Required for Firefox
   	link.click();
   	document.body.removeChild(link);
-  	toast({ title: "Ekspor Berhasil", description: "Data riwayat telah diekspor ke CSV." });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredAndSortedRiwayat]);
+	 toast({ title: "Ekspor Berhasil", description: "Data riwayat telah diekspor ke CSV." });
+	 }, [filteredAndSortedRiwayat, toast]);
 
   const viewOrderDetails = useCallback((order: Pemesanan) => {
   	setSelectedOrder(order);
@@ -395,8 +450,7 @@ export function usePemesanan() {
   	// Fungsi untuk menampilkan toast (bisa dipanggil dari mana saja)
   	const showToast = useCallback((title: string, description: string, variant?: "default" | "destructive") => {
   		toast({ title, description, variant });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+	}, [toast]);
   return {
   	riwayat, // Data asli
   	filteredAndSortedRiwayat, // Data yang sudah difilter & sort
@@ -421,8 +475,13 @@ export function usePemesanan() {
   	  openDeleteConfirm,  // Action untuk membuka modal hapus
   	  closeDeleteConfirm, // Action untuk menutup modal hapus
   	  confirmDeleteOrder, // Action untuk konfirmasi penghapusan
+ 	  	  deleteById, // Test-friendly direct deletion
   	  showToast, // Tambahkan showToast ke actions
   	},
   };
 }
+
+// Export types for external usage (context, tests)
+export type UsePemesananReturn = ReturnType<typeof usePemesanan>;
+export type PemesananActions = UsePemesananReturn['actions'];
 
