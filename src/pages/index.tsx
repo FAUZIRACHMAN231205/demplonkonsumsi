@@ -42,11 +42,7 @@ export default function Home() {
     const handleCloseForm = () => setIsFormModalOpen(false);
 
     const handleFormSubmit = (values: FormInputData) => {
-        const success = addOrder(values);
-        if (success) {
-            setIsFormModalOpen(false);
-        }
-        return success;
+        return addOrder(values);
     };
 
     useEffect(() => {
