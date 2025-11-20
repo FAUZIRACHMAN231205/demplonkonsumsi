@@ -1,9 +1,0 @@
-Vitest run summary (latest local run):
-
-Test Files: 1 passed (1)
-Tests: 4 passed (4)
-
-Notes:
-- File under test: src/hooks/usePemesanan.test.tsx
-- Run command used: npx vitest run --reporter=dot
-- Duration: ~3-4s (local)

@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+report/coverage/
+report/test_results.txt
+report/screenshots/*.png
+*.lcov
 
 # next.js
 /.next/
